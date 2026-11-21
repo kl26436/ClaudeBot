@@ -41,12 +41,16 @@ public final class SuperstructurePlanner {
             KeepOut.Range nextRange = marginedRange(zone + (goalZone > zone ? 1 : -1));
             double lo = Math.max(range.min(), nextRange.min());
             double hi = Math.min(range.max(), nextRange.max());
-            if (lo <= hi) {
+            // With algae, never narrow a range that reaches the floor down to one that cannot (the stow-only zone).
+            boolean keepsAlgaeFloor = !hasAlgae || range.max() < KeepOut.ALGAE_MIN_WRIST_DEG
+                    || hi >= KeepOut.ALGAE_MIN_WRIST_DEG;
+            if (lo <= hi && keepsAlgaeFloor) {
                 range = new KeepOut.Range(lo, hi);
             }
         }
         double wristTarget = clamp(goalWrist, range.min(), range.max());
-        if (hasAlgae) {
+        // The keep-out table outranks the algae rule: only floor the wrist where the zone range reaches the floor.
+        if (hasAlgae && range.max() >= KeepOut.ALGAE_MIN_WRIST_DEG) {
             wristTarget = Math.max(wristTarget, KeepOut.ALGAE_MIN_WRIST_DEG);
         }
 

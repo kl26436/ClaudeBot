@@ -63,4 +63,30 @@ class SuperstructurePlannerTest {
         assertThrows(IllegalArgumentException.class,
                 () -> SuperstructurePlanner.next(5, Double.NaN, new Targets(5, 0), false));
     }
+
+    @Test void algaeFlagNeverPullsTheWristOutOfStow() {
+        var t = SuperstructurePlanner.next(0, -90, new Targets(17.5, -35), true);
+        assertEquals(-90, t.wristDeg(), 1e-9);
+        assertEquals(5.5, t.carriageIn(), 1e-9);
+    }
+
+    @Test void algaeMovesStayLegalAndKeepTheFloor() {
+        var carry = new Setpoints.Pose[] {Setpoints.Pose.ALGAE_LOW, Setpoints.Pose.ALGAE_HIGH,
+            Setpoints.Pose.ALGAE_CARRY, Setpoints.Pose.NET, Setpoints.Pose.PROCESSOR};
+        var targets = new Setpoints.Pose[] {Setpoints.Pose.ALGAE_LOW, Setpoints.Pose.ALGAE_HIGH,
+            Setpoints.Pose.ALGAE_CARRY, Setpoints.Pose.NET, Setpoints.Pose.PROCESSOR, Setpoints.Pose.STOW};
+        for (var from : carry) for (var to : targets) {
+            double h = from.carriageIn, w = from.wristDeg;
+            var goal = new Targets(to.carriageIn, to.wristDeg);
+            for (int tick = 0; tick < 3000; tick++) {
+                var t = SuperstructurePlanner.next(h, w, goal, true);
+                h += MathUtil.clamp(t.carriageIn() - h, -1.1, 1.1);
+                w += MathUtil.clamp(t.wristDeg() - w, -4, 4);
+                String at = from + " to " + to + " tick " + tick + " h=" + h + " w=" + w;
+                assertTrue(KeepOut.isLegal(h, w), at);
+                assertTrue(w >= KeepOut.ALGAE_MIN_WRIST_DEG - 1e-9, at);
+                assertTrue(h >= 1.25 - 1e-9, at);
+            }
+        }
+    }
 }

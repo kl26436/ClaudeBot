@@ -1,0 +1,126 @@
+import edu.wpi.first.gradlerio.GradleRIOPlugin
+import groovy.json.JsonSlurper
+
+plugins {
+    id "java"
+    id "edu.wpi.first.GradleRIO" version "2026.2.1"
+}
+
+def javaVersion = JavaVersion.VERSION_17
+
+java {
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+}
+
+def ROBOT_MAIN_CLASS = "frc.robot.Main"
+
+// Deploy targets (roboRIO) and artifacts. Team number comes from .wpilib/wpilib_preferences.json.
+deploy {
+    targets {
+        roborio(getTargetTypeClass('RoboRIO')) {
+            team = project.frc.getTeamNumber()
+            debug = project.frc.getDebugOrDefault(false)
+
+            artifacts {
+                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
+                }
+
+                frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
+                    files = project.fileTree('src/main/deploy')
+                    directory = '/home/lvuser/deploy'
+                    deleteOldFiles = false
+                }
+            }
+        }
+    }
+}
+
+def deployArtifact = deploy.targets.roborio.artifacts.frcJava
+
+// Set to true to use debug for JNI.
+wpi.java.debugJni = false
+
+// Desktop support is required for simulation and for the sim test layers.
+//noinspection GroovyUnusedAssignment
+def includeDesktopSupport = true
+
+dependencies {
+    annotationProcessor wpi.java.deps.wpilibAnnotations()
+    implementation wpi.java.deps.wpilib()
+    implementation wpi.java.vendor.java()
+
+    roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)
+    roborioDebug wpi.java.vendor.jniDebug(wpi.platforms.roborio)
+
+    roborioRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.roborio)
+    roborioRelease wpi.java.vendor.jniRelease(wpi.platforms.roborio)
+
+    nativeDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.desktop)
+    nativeDebug wpi.java.vendor.jniDebug(wpi.platforms.desktop)
+    simulationDebug wpi.sim.enableDebug()
+
+    nativeRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
+    nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
+    simulationRelease wpi.sim.enableRelease()
+
+    testImplementation platform("org.junit:junit-bom:5.11.4")
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
+    testImplementation "org.junit.jupiter:junit-jupiter-params"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+    // AdvantageKit @AutoLog annotation processor, pinned to the vendordep version.
+    def akitJson = new JsonSlurper().parseText(new File(projectDir.getAbsolutePath() + "/vendordeps/AdvantageKit.json").text)
+    annotationProcessor "org.littletonrobotics.akit:akit-autolog:$akitJson.version"
+}
+
+// Layer 1 tests (no HAL, no Phoenix) run under `test`; layers 2 and 3 are tagged "sim".
+test {
+    useJUnitPlatform {
+        excludeTags 'sim'
+    }
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+}
+
+tasks.register('simTest', Test) {
+    description = 'Runs the HAL/Phoenix/maple-sim tests tagged "sim".'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'sim'
+    }
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+    maxParallelForks = 1
+}
+
+// Simulation configuration. The GUI and Driver Station extensions are on by default.
+// Pass -PheadlessSim to drop the GUI (for machines with no display).
+if (!project.hasProperty('headlessSim')) {
+    wpi.sim.addGui().defaultEnabled = true
+}
+wpi.sim.addDriverstation()
+
+// Fat jar so every library is available at runtime on the roboRIO.
+jar {
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from sourceSets.main.allSource
+    manifest GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+deployArtifact.jarTask = jar
+wpi.java.configureExecutableTasks(jar)
+wpi.java.configureTestTasks(test)
+wpi.java.configureTestTasks(simTest)
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add '-XDstringConcat=inline'
+}
+
+// Watches for a new log file and replays it (AdvantageKit replay mode).
+tasks.register('replayWatch', JavaExec) {
+    mainClass = "org.littletonrobotics.junction.ReplayWatch"
+    classpath = sourceSets.main.runtimeClasspath
+}

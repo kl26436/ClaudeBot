@@ -1,1 +1,31 @@
 .superpowers/
+
+# Gradle / GradleRIO
+.gradle/
+build/
+bin/
+out/
+.gradletasknames
+
+# AdvantageKit logs (sim and replay output)
+logs/
+*.wpilog
+*.hoot
+*.rtsl
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Simulation GUI state
+simgui*.json
+networktables.json
+networktables.json.bck

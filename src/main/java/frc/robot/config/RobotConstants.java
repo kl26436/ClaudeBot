@@ -55,7 +55,7 @@ public final class RobotConstants {
         public static final double TRAVEL_IN = 66;
         public static final double SOFT_MAX_IN = 65.25;
         public static final double MAX_ACCEL_IN_PER_S2 = 0.6 * 386.09;
-        public static final double CRUISE_IN_PER_S = 110; // PLACEHOLDER(tuning)
+        public static final double CRUISE_IN_PER_S = 65; // PLACEHOLDER(tuning)
         public static final double PIVOT_REST_HEIGHT_IN = 24.5;
         public static final double PIVOT_X_IN = 4.5;
         public static final double CARRIAGE_GROUP_LB = 25;

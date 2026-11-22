@@ -29,3 +29,4 @@ Thumbs.db
 simgui*.json
 networktables.json
 networktables.json.bck
+ctre_sim/

@@ -296,6 +296,32 @@ class SuperstructureSimTest {
         assertTrue(s.atPose(), "did not reach stow: h=" + elevator.carriageIn() + " w=" + wrist.wristDeg());
     }
 
+    /**
+     * The driver lets go of a score with the carriage high and falling, then presses again while it is
+     * still sliding down: the carriage cannot stop at once, so the wrist must not swing back to L4's
+     * -52 until the carriage is sure to stay above the funnel band.
+     */
+    @Test
+    void cancelAndPressAgainWhileFallingStaysLegal() {
+        start();
+        seatCoral();
+        for (double fallS : new double[] {0.0, 0.2, 0.4}) {
+            goTo(Wanted.L4);
+            s.setWanted(Wanted.STOW);
+            // The wrist turns first; wait for the carriage to be falling fast, then a little longer.
+            for (int i = 0; i < 75 && elevator.velocityInPerS() > -40; i++) {
+                SimHarness.run(SimHarness.DT);
+                assertLegal("L4 cancelled");
+            }
+            runChecking(fallS, () -> assertLegal("L4 cancelled"));
+            assertTrue(elevator.velocityInPerS() < -20, "precondition: falling, at " + elevator.velocityInPerS() + " in/s");
+            assertTrue(elevator.carriageIn() > 23, "precondition: still above the funnel band, at " + elevator.carriageIn());
+            s.setWanted(Wanted.L4);
+            runChecking(3.0, () -> assertLegal("pressed again after " + fallS + " s of falling"));
+            assertTrue(s.atPose(), "did not get back to L4 after " + fallS + " s");
+        }
+    }
+
     @Test
     void driveSpeedScaleFollowsTheCarriage() {
         start();

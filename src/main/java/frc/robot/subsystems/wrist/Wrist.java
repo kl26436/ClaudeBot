@@ -53,6 +53,11 @@ public class Wrist extends SubsystemBase {
         return inputs.wristDeg;
     }
 
+    /** Measured wrist speed, degrees per second, positive up. */
+    public double velocityDegPerS() {
+        return inputs.velocityDegPerS;
+    }
+
     public boolean atGoal() {
         return trusted && !Double.isNaN(goalDeg) && Math.abs(inputs.wristDeg - goalDeg) <= Setpoints.WRIST_TOL_DEG;
     }

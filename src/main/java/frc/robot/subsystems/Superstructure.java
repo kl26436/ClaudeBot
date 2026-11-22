@@ -189,7 +189,12 @@ public class Superstructure extends SubsystemBase {
         heldWristDeg = Double.NaN;
 
         target = SuperstructurePlanner.next(
-                elevator.carriageIn(), wrist.wristDeg(), new Targets(p.carriageIn, p.wristDeg), claw.hasAlgae());
+                elevator.carriageIn(),
+                elevator.velocityInPerS(),
+                wrist.wristDeg(),
+                wrist.velocityDegPerS(),
+                new Targets(p.carriageIn, p.wristDeg),
+                claw.hasAlgae());
         elevator.setGoalIn(target.carriageIn());
         wrist.setGoalDeg(target.wristDeg());
     }

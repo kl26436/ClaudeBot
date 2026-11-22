@@ -9,15 +9,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Steps the HAL, Phoenix and the command scheduler in 20 ms real-time ticks.
+ * Steps the HAL, Phoenix and the command scheduler in 20 ms real-time ticks, with the registered
+ * physics steps run three times per tick.
  *
  * <p>Phoenix 6 simulated devices run on their own real-time thread, so the harness cannot skip
  * ahead: each tick sleeps to its deadline. Tests call {@link #reset()} before and after each run so
  * that registered steps and scheduler state do not leak between tests.
  */
 public final class SimHarness {
-    /** Tick period in seconds, also the {@code dt} to hand to physics steps. */
+    /** Scheduler period in seconds. Physics steps take {@link #lastDtSeconds()}, not this. */
     public static final double DT = 0.02;
+
+    /**
+     * Physics steps per scheduler tick. Phoenix closes its loops at 1 kHz on whatever position the
+     * physics last wrote, so a position that only moves every 20 ms looks like a sawtooth error to
+     * it; with a 0.025 ohm motor that is tens of amps of current that no real robot would draw.
+     * Stepping the physics every 5 ms keeps that ripple small.
+     */
+    private static final int PHYSICS_STEPS_PER_TICK = 3;
+
+    private static final long PHYSICS_STEP_NS = 5_000_000;
 
     private static final int PHOENIX_ENABLE_TIMEOUT_MS = 100;
 
@@ -62,7 +73,7 @@ public final class SimHarness {
         DriverStationSim.notifyNewData();
     }
 
-    /** Add a step run every tick, before the scheduler, in registration order. */
+    /** Add a physics step, run several times per tick before the scheduler, in registration order. */
     public static void register(Runnable simStep) {
         steps.add(simStep);
     }
@@ -75,8 +86,8 @@ public final class SimHarness {
     }
 
     /**
-     * Wall-clock length of the current tick. Phoenix's simulated controller runs in real time, so
-     * physics must advance by this and not by a fixed {@link #DT}.
+     * Wall-clock time since the previous physics step. Phoenix's simulated controller runs in real
+     * time, so physics must advance by this and not by a fixed amount.
      */
     public static double lastDtSeconds() {
         return lastDtSeconds;
@@ -89,12 +100,20 @@ public final class SimHarness {
         long periodNs = Math.round(DT * 1e9);
         long deadline = System.nanoTime();
         for (int i = 0; i < ticks; i++) {
+            long tickStart = deadline;
             deadline += periodNs;
-            markTick();
             Unmanaged.feedEnable(PHOENIX_ENABLE_TIMEOUT_MS);
             DriverStationSim.notifyNewData();
-            for (Runnable step : steps) {
-                step.run();
+            for (int k = 0; k < PHYSICS_STEPS_PER_TICK; k++) {
+                long stepAt = tickStart + k * PHYSICS_STEP_NS;
+                long waitNs = stepAt - System.nanoTime();
+                if (waitNs > 0) {
+                    sleepNanos(waitNs);
+                }
+                markTick();
+                for (Runnable step : steps) {
+                    step.run();
+                }
             }
             sleepMs(PHOENIX_SETTLE_MS);
             SmartDashboard.updateValues();

@@ -106,8 +106,10 @@ public class WristIOTalonFX implements WristIO, AutoCloseable {
         statorAmps = motor.getStatorCurrent();
         absolutePosition = candi.getPWM1Position();
         pwmPeriod = candi.getPWM1RiseToRise();
-        BaseStatusSignal.setUpdateFrequencyForAll(FAST_SIGNAL_HZ, position, velocity);
-        BaseStatusSignal.setUpdateFrequencyForAll(SLOW_SIGNAL_HZ, appliedVolts, statorAmps, absolutePosition, pwmPeriod);
+        // The motor closes its loop on the CANdi's PWM frames, so they must be fast. At 50 Hz they
+        // went stale under CAN load and the motor fell back to reading 0 degrees.
+        BaseStatusSignal.setUpdateFrequencyForAll(FAST_SIGNAL_HZ, position, velocity, absolutePosition, candi.getPWM1Velocity());
+        BaseStatusSignal.setUpdateFrequencyForAll(SLOW_SIGNAL_HZ, appliedVolts, statorAmps, pwmPeriod);
     }
 
     @Override

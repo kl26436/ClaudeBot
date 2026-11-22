@@ -93,6 +93,9 @@ tasks.register('simTest', Test) {
     }
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
     maxParallelForks = 1
+    // A fresh JVM per test class. Phoenix's simulator slows down as devices are created and closed
+    // over a long run, until remote-sensor frames go stale; one class's devices must not load the next.
+    forkEvery = 1
 }
 
 // Simulation configuration. The GUI and Driver Station extensions are on by default.

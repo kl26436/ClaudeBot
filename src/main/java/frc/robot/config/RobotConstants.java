@@ -37,6 +37,8 @@ public final class RobotConstants {
         public static final double WHEEL_DIAMETER_IN = 3.947;
         public static final double DRIVE_RATIO = 6.75;
         public static final double STEER_RATIO = 150.0 / 7.0;
+        /** Drive motor turns per steer turn with the wheel held (SDS MK4i: 50/14). */
+        public static final double COUPLING_RATIO = 50.0 / 14.0; // PLACEHOLDER(drawing)
         public static final double BUMPER_FACE_FROM_CENTRE_IN = 17.4; // PLACEHOLDER(drawing)
         public static final double MAX_SPEED_MPS = 4.67;
         public static final double ROBOT_MASS_LB = 140; // PLACEHOLDER(drawing)

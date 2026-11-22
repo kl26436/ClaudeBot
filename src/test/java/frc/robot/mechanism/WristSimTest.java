@@ -143,6 +143,51 @@ class WristSimTest {
         }
     }
 
+    /** The motor's closed-loop angle disagrees with the absolute encoder, as when its remote frames go stale. */
+    private static final class DisagreeingIO implements WristIO {
+        int targetsSent = 0;
+
+        @Override
+        public void updateInputs(WristIOInputs in) {
+            in.connected = true;
+            in.encoderConnected = true;
+            in.wristDeg = 0;
+            in.absoluteDeg = -90;
+        }
+
+        @Override
+        public void setTargetDeg(double deg) {
+            targetsSent++;
+        }
+    }
+
+    @Test
+    void aMotorThatDisagreesWithTheEncoderIsNotTrusted() {
+        var io = new DisagreeingIO();
+        var suspect = new Wrist(io); // registered with the scheduler, so the harness runs its periodic
+        try {
+            suspect.setGoalDeg(0);
+            SimHarness.run(0.2); // past the debounce
+            assertFalse(suspect.isTrusted(), "a lasting disagreement is a fault");
+            int sentBeforeDistrust = io.targetsSent;
+            SimHarness.run(0.2);
+            assertEquals(sentBeforeDistrust, io.targetsSent, "no targets once distrusted");
+            assertTrue(AlertProbe.active(ENCODER_ALERT));
+        } finally {
+            suspect.close();
+        }
+    }
+
+    @Test
+    void aFastMoveStaysTrusted() {
+        // The two readings are a few milliseconds apart; at full speed that must not look like a fault.
+        wrist.setGoalDeg(75);
+        for (int i = 0; i < 40; i++) {
+            SimHarness.run(SimHarness.DT);
+            assertTrue(wrist.isTrusted(), "lost trust mid-move at " + wrist.wristDeg());
+        }
+    }
+
     @Test
     void anImpossibleAbsoluteAngleIsNotTrusted() {
         var io = new ImpossibleAngleIO();

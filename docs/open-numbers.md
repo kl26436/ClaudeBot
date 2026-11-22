@@ -15,4 +15,4 @@ Rule: when a value is confirmed, change it and delete its `PLACEHOLDER` comment 
 
 ## Known simulation limits
 
-- **Elevator cruise speed.** `ElevatorK.CRUISE_IN_PER_S` is 65 in/s (about 1.3 s for full travel). The design value was 110 in/s. In the Phoenix simulator, Motion Magic stops decelerating once the profile's peak speed passes roughly 70 in/s, whatever the gains; the cause was not found and may be a simulator artefact. Raise the value on the real robot, in steps, with the carriage well below the top.
+- **Elevator cruise speed.** `ElevatorK.CRUISE_IN_PER_S` is 65 in/s (about 1.3 s for full travel). The design value was 110 in/s. At 110 in/s in the Phoenix simulator the Motion Magic reference itself stops slowing down properly (its velocity falls from 110 to about 100 in/s, then at only about 12 in/s² instead of 231.65) and the carriage reaches the top hard stop. Below about 70 in/s the profile is normal. Gains, FOC, soft limits and the physics step rate make no difference. See `docs/HANDOFF.md`, Open problems. Do not raise the value on a real robot near the top of travel until this is understood.

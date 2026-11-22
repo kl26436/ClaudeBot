@@ -3,6 +3,7 @@ package frc.robot.field;
 import static edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -60,7 +61,30 @@ public final class Reef {
     }
 
     public static Pose2d tagPose(Alliance a, int face) {
-        return Tags.pose((a == Alliance.Blue ? BLUE_TAGS : RED_TAGS)[face]);
+        return Tags.pose(tagId(a, face));
+    }
+
+    /** AprilTag ID on a reef face. */
+    public static int tagId(Alliance a, int face) {
+        return (a == Alliance.Blue ? BLUE_TAGS : RED_TAGS)[face];
+    }
+
+    /** The face's tag in 3D, for the camera geometry. */
+    public static Pose3d tagPose3d(Alliance a, int face) {
+        return Tags.LAYOUT.getTagPose(tagId(a, face)).orElseThrow();
+    }
+
+    /** Every reef tag of both alliances, as the camera could see them. */
+    public static List<Integer> allTagIds() {
+        var ids = new ArrayList<Integer>();
+        for (int id : BLUE_TAGS) ids.add(id);
+        for (int id : RED_TAGS) ids.add(id);
+        return ids;
+    }
+
+    /** Any tag's 3D pose by ID. */
+    public static Pose3d anyTagPose3d(int id) {
+        return Tags.LAYOUT.getTagPose(id).orElseThrow();
     }
 
     /** Robot facing the tag, `outIn` inches out along the tag normal, `leftIn` inches to the robot's left. */

@@ -4,6 +4,7 @@ package frc.robot.autos;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -40,6 +41,7 @@ public class AutoChooser {
     private final Map<Alliance, AutoFactory> factories = new EnumMap<>(Alliance.class);
     private final Map<Alliance, Map<Auto, AutoRoutine>> built = new EnumMap<>(Alliance.class);
     private final Alert noAllianceAlert = new Alert("No alliance: auto not run", AlertType.kError);
+    private final Alert poseNotSetAlert = new Alert("Auto started without its start pose set", AlertType.kError);
 
     /** Set only by tests, to pick an auto without the dashboard. */
     private Auto override = null;
@@ -116,10 +118,13 @@ public class AutoChooser {
         return RobotState.get().alliance().flatMap(a -> routine(a).startPose());
     }
 
-    /** The dashboard button: put the pose estimate on the selected auto's start pose. */
+    /**
+     * The dashboard button: put the pose estimate on the selected auto's start pose. Ignored while the
+     * robot is enabled, so a stray click mid-match cannot teleport odometry.
+     */
     public void setPoseToStart() {
         Optional<Alliance> alliance = RobotState.get().alliance();
-        if (alliance.isEmpty()) {
+        if (alliance.isEmpty() || DriverStation.isEnabled()) {
             return;
         }
         routine(alliance.get()).startPose().ifPresent(p -> r.drive().resetPose(p));
@@ -133,10 +138,21 @@ public class AutoChooser {
         return alliance.isPresent() && poseSetFor == selected() && poseSetAlliance.equals(alliance);
     }
 
-    /** Called from autonomousInit: the command to run, or empty and an alert if the alliance is unknown. */
+    /**
+     * Called from autonomousInit: the command to run, or empty and an alert if the alliance is unknown.
+     * If the start-pose button was not pressed for this auto, an alert is raised and the estimate is put
+     * on the start pose anyway: the robot is meant to be standing there, and an estimate left wherever
+     * it was would drive every leg from the wrong place.
+     */
     public Optional<Command> startAuto() {
         Optional<Command> command = selectedCommand();
         noAllianceAlert.set(command.isEmpty());
+        Optional<Pose2d> start = startPose();
+        boolean poseMissing = command.isPresent() && start.isPresent() && !poseSetForSelected();
+        poseNotSetAlert.set(poseMissing);
+        if (poseMissing) {
+            r.drive().resetPose(start.get());
+        }
         command.ifPresent(c -> Logger.recordOutput("Auto/Running", selected().name()));
         return command;
     }

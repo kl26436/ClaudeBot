@@ -144,6 +144,38 @@ class RollersSimTest {
     }
 
     @Test
+    void anOfflineSensorRemembersTheLastPieceUntilItIsPushedOut() {
+        seat();
+        coralSim.setRangeConnected(false);
+        SimHarness.run(0.2);
+        assertFalse(coral.hasCoral(), "the reported state reads absent while offline");
+        assertFalse(coral.sensorOnline());
+        assertTrue(coral.mayHaveCoral(), "the last known state is kept for the interlocks");
+        coral.eject();
+        SimHarness.run(0.1);
+        assertTrue(coral.mayHaveCoral(), "a short push is not proof the coral left");
+        SimHarness.run(0.4);
+        assertFalse(coral.mayHaveCoral(), "a long enough push clears it");
+        coral.stop();
+        coralSim.setRangeConnected(true);
+        SimHarness.run(0.2);
+        assertTrue(coral.sensorOnline());
+        assertTrue(coral.mayHaveCoral(), "back online, the sensor's own reading wins (the sim coral is still seated)");
+    }
+
+    @Test
+    void offlineAlgaeSensorKeepsTheLastAlgae() {
+        claw.intake();
+        SimHarness.run(0.1);
+        clawSim.setAlgaePresent(true);
+        SimHarness.run(0.2);
+        clawSim.setRangeConnected(false);
+        SimHarness.run(0.2);
+        assertFalse(claw.hasAlgae());
+        assertTrue(claw.mayHaveAlgae());
+    }
+
+    @Test
     void offlineAlgaeSensorReadsEmptyAndAlerts() {
         claw.intake();
         SimHarness.run(0.1);

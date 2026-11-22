@@ -11,15 +11,26 @@ import frc.robot.config.Setpoints;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Elevator carriage. Un-homed at boot: on first enable it drives down at {@link ElevatorK#HOME_VOLTS}
- * until the home switch closes, then zeroes. Goals are ignored until it is homed.
+ * Elevator carriage. At start-up it decides once whether the motor controller still holds a zero:
+ * the Talon keeps its position across a robot-code restart, and an unpowered carriage falls to the
+ * bottom, so a reading above {@link #KEPT_ZERO_MIN_IN} is a zero from before the restart and is kept
+ * where it is. Otherwise, on first enable, it drives down at {@link ElevatorK#HOME_VOLTS} until the
+ * home switch closes (or it stalls), then zeroes. Goals are ignored until it is homed.
+ *
+ * <p>If the motor controller reboots while running (a brown-out), the position is lost: the carriage
+ * stops, an alert asks for it to be lowered by hand, and nothing moves it again until robot code
+ * restarts. Driving down blind could take the wrist through the funnel band.
  */
 public class Elevator extends SubsystemBase {
     private enum State {
         UNHOMED,
         HOMING,
-        HOMED
+        HOMED,
+        LOST
     }
+
+    /** A start-up reading above this is a zero kept from before a code restart. */
+    static final double KEPT_ZERO_MIN_IN = 1.0;
 
     /** Below this speed the carriage counts as stalled while homing. */
     private static final double STALL_SPEED_IN_PER_S = 0.5;
@@ -29,6 +40,9 @@ public class Elevator extends SubsystemBase {
     private final ElevatorIO io;
     private final ElevatorIOInputsAutoLogged inputs = new ElevatorIOInputsAutoLogged();
     private final Alert homeSwitchAlert = new Alert("Elevator home switch not seen", AlertType.kWarning);
+    private final Alert lostAlert = new Alert(
+            "Elevator lost its position: lower it by hand, then restart the robot code", AlertType.kError);
+    private boolean startDecided = false;
 
     private State state = State.UNHOMED;
     private double goalIn = 0;
@@ -65,6 +79,9 @@ public class Elevator extends SubsystemBase {
 
     /** Forget the zero and run the homing routine again on the next enabled cycle. */
     public void requestHome() {
+        if (state == State.LOST) {
+            return; // only a code restart, after the carriage is lowered by hand, clears a lost position
+        }
         state = State.UNHOMED;
         goalIn = 0;
     }
@@ -72,6 +89,7 @@ public class Elevator extends SubsystemBase {
     /** Release the alert so a discarded elevator does not leave it raised. */
     public void close() {
         homeSwitchAlert.close();
+        lostAlert.close();
     }
 
     @Override
@@ -79,14 +97,29 @@ public class Elevator extends SubsystemBase {
         io.updateInputs(inputs);
         Logger.processInputs("Elevator", inputs);
 
-        if (state == State.UNHOMED && DriverStation.isEnabled()) {
+        if (!startDecided && inputs.connected) {
+            startDecided = true;
+            // On the switch, just zero there; above it, a reading is a zero kept from before a restart.
+            if (state == State.UNHOMED && !inputs.homeSwitch && inputs.carriageIn > KEPT_ZERO_MIN_IN) {
+                io.keepZero();
+                goalIn = inputs.carriageIn;
+                state = State.HOMED;
+                Logger.recordOutput("Elevator/KeptZeroIn", inputs.carriageIn);
+            }
+        }
+        if (state == State.HOMED && inputs.resetOccurred) {
+            state = State.LOST;
+            lostAlert.set(true);
+        }
+
+        if (state == State.UNHOMED && startDecided && DriverStation.isEnabled()) {
             state = State.HOMING;
             homingStartS = Timer.getFPGATimestamp();
             stalledSinceS = Double.NaN;
         }
 
         switch (state) {
-            case UNHOMED -> io.stop();
+            case UNHOMED, LOST -> io.stop();
             case HOMING -> home();
             case HOMED -> io.setTargetIn(goalIn);
         }

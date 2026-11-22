@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 @Tag("sim")
 class ElevatorSimTest {
     private static final String HOME_ALERT = "Elevator home switch not seen";
+    private static final String LOST_ALERT = "Elevator lost its position: lower it by hand, then restart the robot code";
     private static final double SOFT_MAX_IN = 65.25;
     private static final double MAX_DOWN_ACCEL_IN_PER_S2 = 231.65;
     private static final int ACCEL_WINDOW_TICKS = 3;
@@ -86,14 +87,79 @@ class ElevatorSimTest {
         return Arrays.asList(warnings).contains(text);
     }
 
+    /**
+     * The Talon keeps its position across a robot-code restart (and an unpowered carriage falls to
+     * the bottom, so a fresh power-up reads near zero). A reading well above the switch at start-up is
+     * therefore a zero kept from before the restart: keep it and do not drive down blind, which could
+     * take the wrist through the funnel band.
+     */
     @Test
-    void homesFromAnUnknownHeight() {
+    void keepsItsZeroAcrossACodeRestart() {
         sim.setCarriageIn(7.0);
+        SimHarness.run(0.2);
         SimHarness.enable();
-        SimHarness.run(4);
+        SimHarness.run(1.0);
+        assertTrue(elevator.isHomed(), "a kept zero counts as homed");
+        assertEquals(7.0, elevator.carriageIn(), 0.3);
+        assertEquals(7.0, sim.trueCarriageIn(), 0.3, "it must not have driven down to look for the switch");
+        assertFalse(alertActive(HOME_ALERT));
+        elevator.setGoalIn(20);
+        SimHarness.run(1.0);
+        assertEquals(20, sim.trueCarriageIn(), 0.5, "goals work from the kept zero");
+    }
+
+    @Test
+    void homesFromJustAboveTheSwitch() {
+        sim.setCarriageIn(0.8);
+        SimHarness.enable();
+        SimHarness.run(2.0);
         assertTrue(elevator.isHomed());
         assertEquals(0, elevator.carriageIn(), 0.3);
+        assertEquals(0, sim.trueCarriageIn(), 0.3);
         assertFalse(alertActive(HOME_ALERT), "a working switch must not raise the alert");
+    }
+
+    /** An IO whose motor controller reboots (a brown-out) while the carriage is up. */
+    private static final class ResettingIO implements frc.robot.subsystems.elevator.ElevatorIO {
+        boolean reset = false;
+        int commands = 0;
+
+        @Override
+        public void updateInputs(ElevatorIOInputs in) {
+            in.connected = true;
+            in.carriageIn = reset ? 0 : 30;
+            in.resetOccurred = reset;
+        }
+
+        @Override
+        public void setTargetIn(double carriageIn) {
+            commands++;
+        }
+
+        @Override
+        public void setVolts(double volts) {
+            commands++;
+        }
+    }
+
+    @Test
+    void aControllerResetWhileHomedLosesThePosition() {
+        var io = new ResettingIO();
+        var e = new Elevator(io);
+        try {
+            SimHarness.enable();
+            SimHarness.run(0.1);
+            assertTrue(e.isHomed(), "precondition: the kept zero at 30 in counts as homed");
+            io.reset = true;
+            SimHarness.run(0.1);
+            int sent = io.commands;
+            SimHarness.run(0.5);
+            assertFalse(e.isHomed());
+            assertEquals(sent, io.commands, "no motion once the position is lost");
+            assertTrue(frc.robot.testutil.AlertProbe.active(LOST_ALERT));
+        } finally {
+            e.close();
+        }
     }
 
     @ParameterizedTest
@@ -147,7 +213,7 @@ class ElevatorSimTest {
     void brokenHomeSwitchStillHomesOnStall() {
         assertFalse(alertActive(HOME_ALERT), "alert already active before the test");
         sim.setHomeSwitchBroken(true);
-        sim.setCarriageIn(5);
+        sim.setCarriageIn(0.8); // a fresh power-up: the carriage has fallen to the bottom
         SimHarness.enable();
         SimHarness.run(5);
         assertTrue(elevator.isHomed());

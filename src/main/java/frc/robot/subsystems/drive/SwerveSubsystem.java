@@ -45,6 +45,12 @@ public class SwerveSubsystem extends SubsystemBase {
     private boolean teleopGains;
     private double speedScale = 1.0;
     private DoubleSupplier speedScaleSource = null;
+    private DoubleSupplier accelLimitSource = () -> Double.POSITIVE_INFINITY;
+    /** The last field velocity sent, which the acceleration limit measures from. */
+    private double lastVx = 0, lastVy = 0;
+
+    /** Below this commanded speed an idle drivetrain is simply stopped. */
+    static final double STOPPED_MPS = 0.02;
     private double lastPeriodicS = Double.NaN;
 
     public SwerveSubsystem(SwerveIO io) {
@@ -92,6 +98,14 @@ public class SwerveSubsystem extends SubsystemBase {
         speedScale = MathUtil.clamp(scale, 0, 1);
     }
 
+    /**
+     * Read the translation acceleration limit (m/s^2) from {@code source} every loop. Every commanded
+     * change of field velocity, speeding up and slowing down alike, is held to it.
+     */
+    public void setAccelLimitSource(DoubleSupplier source) {
+        accelLimitSource = source;
+    }
+
     /** Read the speed scale from {@code source} at the start of every loop, before driving. */
     public void setSpeedScaleSource(DoubleSupplier source) {
         speedScaleSource = source;
@@ -111,6 +125,20 @@ public class SwerveSubsystem extends SubsystemBase {
         return inputs.pose;
     }
 
+    /** Move the commanded field velocity toward (vx, vy) by no more than accelLimit * dt. */
+    private void limit(double vx, double vy, double accelLimit, double dt) {
+        double dvx = vx - lastVx;
+        double dvy = vy - lastVy;
+        double dv = Math.hypot(dvx, dvy);
+        double maxDv = accelLimit * dt;
+        if (Double.isFinite(maxDv) && dv > maxDv && dv > 0) {
+            dvx *= maxDv / dv;
+            dvy *= maxDv / dv;
+        }
+        lastVx += dvx;
+        lastVy += dvy;
+    }
+
     @Override
     public void periodic() {
         io.updateInputs(inputs);
@@ -126,20 +154,32 @@ public class SwerveSubsystem extends SubsystemBase {
         double dt = Double.isNaN(lastPeriodicS) ? 0 : now - lastPeriodicS;
         lastPeriodicS = now;
 
+        double accelLimit = accelLimitSource.getAsDouble();
+        double stepS = dt > 0 ? dt : 0.02;
         switch (wanted) {
-            case IDLE -> io.stop();
-            case TELEOP -> io.driveFieldRelative(
-                    stickX * DriveK.MAX_SPEED_MPS * speedScale,
-                    stickY * DriveK.MAX_SPEED_MPS * speedScale,
-                    stickOmega * TELEOP_MAX_OMEGA_RAD_PER_S * speedScale);
+            case IDLE -> {
+                limit(0, 0, accelLimit, stepS);
+                if (Math.hypot(lastVx, lastVy) < STOPPED_MPS) {
+                    lastVx = 0;
+                    lastVy = 0;
+                    io.stop();
+                } else {
+                    io.driveFieldRelative(lastVx, lastVy, 0);
+                }
+            }
+            case TELEOP -> {
+                limit(stickX * DriveK.MAX_SPEED_MPS * speedScale, stickY * DriveK.MAX_SPEED_MPS * speedScale, accelLimit, stepS);
+                io.driveFieldRelative(lastVx, lastVy, stickOmega * TELEOP_MAX_OMEGA_RAD_PER_S * speedScale);
+            }
             case DRIVE_TO_POINT -> {
                 var controller = teleopGains ? teleopController : autoController;
                 var out = controller.calculate(
                         inputs.pose.getTranslation(), target.getTranslation(), targetMaxSpeedMps * speedScale, dt);
-                io.driveFieldRelativeFacing(
-                        out.vxMps(), out.vyMps(), target.getRotation(), DRIVE_TO_POINT_MAX_OMEGA_RAD_PER_S);
+                limit(out.vxMps(), out.vyMps(), accelLimit, stepS);
+                io.driveFieldRelativeFacing(lastVx, lastVy, target.getRotation(), DRIVE_TO_POINT_MAX_OMEGA_RAD_PER_S);
             }
         }
+        Logger.recordOutput("Drive/AccelLimitMps2", accelLimit);
 
         Logger.recordOutput("Drive/Wanted", wanted);
         Logger.recordOutput("Drive/Target", target);

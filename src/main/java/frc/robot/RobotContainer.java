@@ -127,6 +127,7 @@ public class RobotContainer {
                 : new SimulatedRobot(driveSim, elevatorSim, wristSim, coralSim, clawSim, superstructure, coral, claw);
 
         drive.setSpeedScaleSource(superstructure::driveSpeedScale);
+        drive.setAccelLimitSource(superstructure::driveAccelLimitMps2);
         autoChooser = new AutoChooser(this);
         bindControls();
     }

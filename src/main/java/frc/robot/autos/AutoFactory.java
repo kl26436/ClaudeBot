@@ -53,13 +53,17 @@ class AutoFactory {
 
     // ---- Legs ----
 
-    /** Score on a branch at L4, or skip straight on if no coral is on board when the leg starts. */
+    /**
+     * Score on a branch at L4, or skip straight on if the coral sensor answers and sees no coral. With
+     * the sensor offline the leg runs anyway: a blind attempt costs a few seconds, a skipped preload
+     * costs the piece.
+     */
     private Command scoreLeg(Branch b) {
         return Commands.either(
                         ScoreCommands.alignAndScore(r, () -> b, () -> Wanted.L4, SCORE_SPEED_MPS, false)
                                 .withTimeout(SCORE_LEG_TIMEOUT_S),
                         Commands.none(),
-                        () -> r.superstructure().hasCoral())
+                        () -> r.superstructure().hasCoral() || !r.superstructure().coralSensorOnline())
                 .withName("Score " + b);
     }
 

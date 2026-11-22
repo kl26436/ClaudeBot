@@ -16,6 +16,8 @@ public interface ElevatorIO {
         public double appliedVolts;
         public double statorAmps;
         public double supplyAmps;
+        /** True on the loop the motor controller reports it has rebooted since the last loop. */
+        public boolean resetOccurred;
     }
 
     default void updateInputs(ElevatorIOInputs in) {}
@@ -28,6 +30,9 @@ public interface ElevatorIO {
 
     /** Declare the present carriage position to be zero. */
     default void zero() {}
+
+    /** Keep the position the motor controller already has (a zero from before a code restart). */
+    default void keepZero() {}
 
     default void stop() {}
 }

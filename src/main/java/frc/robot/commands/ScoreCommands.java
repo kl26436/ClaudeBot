@@ -29,6 +29,25 @@ public final class ScoreCommands {
     /** After a release request, a coral still seen after this long ends the score anyway. */
     static final double RELEASE_TIMEOUT_S = 1.0;
 
+    /** Keep pushing at least this long after the release starts, even once the sensor reads empty. */
+    static final double MIN_RELEASE_S = 0.25; // PLACEHOLDER(tuning)
+
+    /**
+     * Whether a release requested at {@code requestedAtS} is over. It must have actually started at the
+     * pose; then it ends once an answering sensor reads the piece gone (after {@link #MIN_RELEASE_S}),
+     * or after {@link #RELEASE_TIMEOUT_S}, which is the only end when the sensor is offline. A release
+     * that never starts also gives up after {@link #RELEASE_TIMEOUT_S}.
+     */
+    static boolean releaseOver(
+            Superstructure s, double requestedAtS, boolean pieceSeen, boolean sensorOnline) {
+        double t = Timer.getFPGATimestamp() - requestedAtS;
+        if (!s.isReleasing()) {
+            return t >= RELEASE_TIMEOUT_S;
+        }
+        boolean seenGone = sensorOnline && !pieceSeen;
+        return (seenGone && t >= MIN_RELEASE_S) || t >= RELEASE_TIMEOUT_S;
+    }
+
     /** A route's via point counts as passed this close to it. */
     static final double VIA_PASSED_M = 0.25;
 
@@ -72,8 +91,9 @@ public final class ScoreCommands {
 
             @Override
             boolean done() {
+                var s = r.superstructure();
                 return !Double.isNaN(releasedAtS)
-                        && (!r.superstructure().hasCoral() || Timer.getFPGATimestamp() - releasedAtS >= RELEASE_TIMEOUT_S);
+                        && releaseOver(s, releasedAtS, s.hasCoral(), s.coralSensorOnline());
             }
 
             @Override
@@ -175,8 +195,7 @@ public final class ScoreCommands {
                             s.requestRelease(true);
                             releasedAt[0] = Timer.getFPGATimestamp();
                         }),
-                        Commands.waitUntil(() -> !s.hasAlgae()
-                                || Timer.getFPGATimestamp() - releasedAt[0] >= RELEASE_TIMEOUT_S))
+                        Commands.waitUntil(() -> releaseOver(s, releasedAt[0], s.hasAlgae(), s.algaeSensorOnline())))
                 .finallyDo(() -> {
                     s.requestRelease(false);
                     s.setWanted(Wanted.STOW);

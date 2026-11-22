@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.config.RobotConstants.DriveK;
 import frc.robot.config.RobotConstants.ElevatorK;
 import frc.robot.config.Setpoints;
 import frc.robot.config.Setpoints.Pose;
@@ -40,6 +41,11 @@ public class Superstructure extends SubsystemBase {
     static final double FULL_SPEED_MAX_IN = 23.0; // PLACEHOLDER(tuning)
 
     static final double MIN_SPEED_SCALE = 0.35; // PLACEHOLDER(tuning)
+
+    /** Fraction of the tipping acceleration the drive may use. */
+    static final double TIP_SAFETY = 0.8; // PLACEHOLDER(tuning)
+
+    private static final double STANDARD_G = 9.80665;
 
     private final Elevator elevator;
     private final Wrist wrist;
@@ -92,7 +98,7 @@ public class Superstructure extends SubsystemBase {
     /** The pose the wanted state means right now: STOW while holding an algae is the algae carry. */
     public Pose pose() {
         return switch (wanted) {
-            case STOW -> claw.hasAlgae() ? Pose.ALGAE_CARRY : Pose.STOW;
+            case STOW -> claw.mayHaveAlgae() ? Pose.ALGAE_CARRY : Pose.STOW;
             case STATION_INTAKE -> Pose.STATION;
             case L1 -> Pose.L1;
             case L2 -> Pose.L2;
@@ -115,12 +121,27 @@ public class Superstructure extends SubsystemBase {
                 && Math.abs(wrist.wristDeg() - p.wristDeg) <= Setpoints.WRIST_TOL_DEG;
     }
 
+    /** True once a requested release has actually started at the pose (the rollers are pushing). */
+    public boolean isReleasing() {
+        return releasing;
+    }
+
+    /** A coral seen by an answering sensor. False while the coral sensor is offline. */
     public boolean hasCoral() {
         return coral.hasCoral();
     }
 
+    /** An algae seen by an answering sensor. False while the algae sensor is offline. */
     public boolean hasAlgae() {
         return claw.hasAlgae();
+    }
+
+    public boolean coralSensorOnline() {
+        return coral.sensorOnline();
+    }
+
+    public boolean algaeSensorOnline() {
+        return claw.sensorOnline();
     }
 
     /** Fraction of full drive speed allowed at the present carriage height. */
@@ -131,6 +152,32 @@ public class Superstructure extends SubsystemBase {
         }
         double t = MathUtil.clamp((h - FULL_SPEED_MAX_IN) / (ElevatorK.SOFT_MAX_IN - FULL_SPEED_MAX_IN), 0, 1);
         return 1.0 - (1.0 - MIN_SPEED_SCALE) * t;
+    }
+
+    /**
+     * Drive acceleration allowed at the present carriage height: {@link #TIP_SAFETY} of the acceleration
+     * that would tip the robot there (drawing R-001), interpolated between the drawing's heights. An
+     * unknown height is treated as full height.
+     */
+    public double driveAccelLimitMps2() {
+        double h = elevator.carriageIn();
+        if (!Double.isFinite(h)) {
+            h = ElevatorK.TRAVEL_IN;
+        }
+        double[] xs = DriveK.TIP_CARRIAGE_IN;
+        double[] gs = DriveK.TIP_ACCEL_G;
+        double tipG = gs[gs.length - 1];
+        if (h <= xs[0]) {
+            tipG = gs[0];
+        } else {
+            for (int i = 0; i + 1 < xs.length; i++) {
+                if (h <= xs[i + 1]) {
+                    tipG = gs[i] + (gs[i + 1] - gs[i]) * (h - xs[i]) / (xs[i + 1] - xs[i]);
+                    break;
+                }
+            }
+        }
+        return TIP_SAFETY * tipG * STANDARD_G;
     }
 
     public Command setWantedCommand(Wanted w) {
@@ -194,7 +241,7 @@ public class Superstructure extends SubsystemBase {
                 wrist.wristDeg(),
                 wrist.velocityDegPerS(),
                 new Targets(p.carriageIn, p.wristDeg),
-                claw.hasAlgae());
+                claw.mayHaveAlgae());
         elevator.setGoalIn(target.carriageIn());
         wrist.setGoalDeg(target.wristDeg());
     }
@@ -210,7 +257,7 @@ public class Superstructure extends SubsystemBase {
             coral.eject();
         } else if (wanted == Wanted.STATION_INTAKE) {
             coral.intake();
-        } else if (coral.hasCoral()) {
+        } else if (coral.mayHaveCoral()) {
             coral.hold();
         } else {
             coral.stop();
@@ -220,7 +267,7 @@ public class Superstructure extends SubsystemBase {
             claw.eject();
         } else if (wanted == Wanted.ALGAE_LOW || wanted == Wanted.ALGAE_HIGH) {
             claw.intake();
-        } else if (claw.hasAlgae()) {
+        } else if (claw.mayHaveAlgae()) {
             claw.hold();
         } else {
             claw.stop();

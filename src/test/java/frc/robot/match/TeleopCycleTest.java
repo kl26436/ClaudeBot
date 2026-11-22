@@ -65,6 +65,20 @@ class TeleopCycleTest {
     }
 
     @Test
+    void aDeadCoralSensorStillScores() {
+        startAt(Reef.scoringPose(Alliance.Blue, Reef.Branch.H)
+                .transformBy(new edu.wpi.first.math.geometry.Transform2d(-1.0, 0, edu.wpi.first.math.geometry.Rotation2d.kZero)), true);
+        r.sim().setCoralSensorConnected(false);
+        SimHarness.run(0.2);
+        assertFalse(r.superstructure().hasCoral(), "precondition: the dead sensor reports no coral");
+        schedule(ScoreCommands.alignAndScore(r, () -> Reef.Branch.H, () -> Wanted.L4, 3.0, true));
+        SimHarness.run(6.0);
+        assertEquals(List.of(Reef.Branch.H), r.sim().coralScored().stream().map(CoralScore::branch).toList());
+        assertEquals(Wanted.STOW, r.superstructure().wanted());
+        r.sim().setCoralSensorConnected(true);
+    }
+
+    @Test
     void releaseAwayFromTheReefDoesNotScore() {
         startAt(new Pose2d(2.5, 6.5, edu.wpi.first.math.geometry.Rotation2d.kZero), true);
         r.superstructure().setWanted(Wanted.L4);
@@ -112,6 +126,57 @@ class TeleopCycleTest {
         assertEquals(Wanted.STOW, r.superstructure().wanted());
         assertTrue(r.vision().lastFix().isEmpty(), "the vision target face is cleared");
         assertTrue(r.superstructure().hasCoral(), "cancelled before the release");
+    }
+
+    private boolean mechanismLegal() {
+        double h = r.sim().trueCarriageIn();
+        double w = r.sim().trueWristDeg();
+        return frc.robot.config.KeepOut.isLegal(
+                        edu.wpi.first.math.MathUtil.clamp(h, 0, 65.25), edu.wpi.first.math.MathUtil.clamp(w, -90, 75))
+                && w >= -91.5 && w <= 76.5 && h >= -0.5 && h <= 65.75;
+    }
+
+    /**
+     * The driver lets go of a score with the carriage high, then drives off at full stick: the
+     * mechanism comes down legally while the drive keeps to the speed cap and the acceleration limit
+     * for the carriage height it is actually at.
+     */
+    @Test
+    void lettingGoHighThenDrivingOffKeepsTheCaps() {
+        startAt(Reef.scoringPose(Alliance.Blue, Reef.Branch.H)
+                .transformBy(new edu.wpi.first.math.geometry.Transform2d(-1.0, 0, edu.wpi.first.math.geometry.Rotation2d.kZero)), true);
+        var score = ScoreCommands.alignAndScore(r, () -> Reef.Branch.H, () -> Wanted.L4, 3.0, true);
+        schedule(score);
+        for (int i = 0; i < 150 && r.sim().trueCarriageIn() < 45; i++) {
+            SimHarness.run(SimHarness.DT);
+        }
+        assertTrue(r.sim().trueCarriageIn() >= 45, "precondition: the carriage is high");
+        score.cancel();
+        // Drive straight back from the reef at full stick, as a driver would.
+        var away = r.drive().run(() -> r.drive().setTeleopInput(-1, 0, 0));
+        schedule(away);
+        // Acceleration over a 60 ms window: one-tick differences of the odometry speed double up when
+        // a sample repeats and the next catches up.
+        java.util.ArrayDeque<Double> speeds = new java.util.ArrayDeque<>();
+        for (int i = 0; i < 60; i++) {
+            SimHarness.run(SimHarness.DT);
+            assertTrue(mechanismLegal(), "keep-out broken at h=" + r.sim().trueCarriageIn() + " w=" + r.sim().trueWristDeg());
+            double speed = Math.hypot(
+                    frc.robot.RobotState.get().speeds().vxMetersPerSecond, frc.robot.RobotState.get().speeds().vyMetersPerSecond);
+            double cap = r.superstructure().driveSpeedScale() * frc.robot.config.RobotConstants.DriveK.MAX_SPEED_MPS;
+            assertTrue(speed <= cap + 0.3, "speed " + speed + " over the cap " + cap + " at h=" + r.sim().trueCarriageIn());
+            speeds.addLast(speed);
+            if (speeds.size() > 4) {
+                speeds.removeFirst();
+            }
+            if (speeds.size() == 4) {
+                double accel = Math.abs(speeds.peekLast() - speeds.peekFirst()) / (3 * SimHarness.DT);
+                double limit = r.superstructure().driveAccelLimitMps2();
+                assertTrue(accel <= limit * 1.3 + 0.5, "accel " + accel + " over the limit " + limit);
+            }
+        }
+        away.cancel();
+        assertEquals(Wanted.STOW, r.superstructure().wanted());
     }
 
     @Test

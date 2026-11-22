@@ -281,6 +281,34 @@ class SuperstructureSimTest {
     }
 
     @Test
+    void algaeSensorDroppingOutKeepsTheAlgaeInterlock() {
+        start();
+        giveAlgae();
+        goTo(Wanted.ALGAE_HIGH);
+        clawSim.setRangeConnected(false);
+        SimHarness.run(0.2);
+        assertFalse(s.hasAlgae(), "the sensor reports absent while offline");
+        s.setWanted(Wanted.STOW);
+        runChecking(2.5, () -> assertTrue(wristSim.trueWristDeg() >= 10 - 1.5,
+                "an algae aboard must keep the wrist at +10 or higher, at " + wristSim.trueWristDeg()));
+        assertTrue(s.atPose(), "stow with an algae is the carry pose");
+        assertTrue(elevator.carriageIn() >= 1.25);
+        assertFalse(claw.isEjecting());
+    }
+
+    @Test
+    void aReleaseReachesTheRollersWithADeadCoralSensor() {
+        start();
+        seatCoral();
+        coralSim.setRangeConnected(false);
+        goTo(Wanted.L2);
+        s.requestRelease(true);
+        SimHarness.run(0.1);
+        assertTrue(s.isReleasing());
+        assertTrue(coral.isEjecting());
+    }
+
+    @Test
     void cancelMidScoreReturnsLegallyAndKeepsTheSpeedCap() {
         start();
         seatCoral();
@@ -323,6 +351,20 @@ class SuperstructureSimTest {
     }
 
     @Test
+    void driveAccelLimitFallsAsTheCarriageRises() {
+        start();
+        double g = 9.80665;
+        // 80 % of the tipping acceleration on drawing R-001: 1.07 g stowed, 0.51 g at full height.
+        assertEquals(0.8 * 1.07 * g, s.driveAccelLimitMps2(), 0.2);
+        goTo(Wanted.L3);
+        double atL3 = s.driveAccelLimitMps2();
+        goTo(Wanted.L4);
+        double atL4 = s.driveAccelLimitMps2();
+        assertTrue(atL3 < 0.8 * 1.07 * g && atL4 < atL3, "L3 " + atL3 + ", L4 " + atL4);
+        assertEquals(0.8 * 0.514 * g, atL4, 0.2);
+    }
+
+    @Test
     void driveSpeedScaleFollowsTheCarriage() {
         start();
         assertEquals(1.0, s.driveSpeedScale(), 1e-9);
@@ -358,9 +400,9 @@ class SuperstructureSimTest {
 
     @Test
     void unhomedElevatorKeepsTheWristStill() {
-        // Start part-way up with a dead home switch: homing takes over three seconds.
+        // Start just above the bottom with a dead home switch: homing by stall takes over three seconds.
         elevatorSim.setHomeSwitchBroken(true);
-        elevatorSim.setCarriageIn(5);
+        elevatorSim.setCarriageIn(0.8);
         SimHarness.enable();
         SimHarness.run(0.06);
         SimHarness.register(() -> elevatorSim.simulate(SimHarness.lastDtSeconds()));

@@ -137,8 +137,47 @@ class AutoMatchTest {
     }
 
     @Test
+    void anAutoStartedWithoutThePoseButtonAlertsAndUsesItsStartPose() {
+        var r = RobotFixture.reset(StartPose.CENTRE.pose(Alliance.Blue), true);
+        var chooser = r.autoChooser();
+        SimHarness.disable();
+        chooser.select(Auto.ONE_CENTRE);
+        chooser.update();
+        r.drive().resetPose(new edu.wpi.first.math.geometry.Pose2d()); // odometry left at the origin
+        SimHarness.run(0.1);
+        assertFalse(chooser.poseSetForSelected());
+        SimHarness.enableAutonomous();
+        var command = chooser.startAuto();
+        assertTrue(command.isPresent());
+        assertTrue(AlertProbe.active("Auto started without its start pose set"));
+        SimHarness.run(0.1);
+        var start = StartPose.CENTRE.pose(Alliance.Blue);
+        assertEquals(0, r.drive().pose().getTranslation().getDistance(start.getTranslation()), 0.05,
+                "the estimate should be put on the auto's start pose, not left at the origin");
+    }
+
+    @Test
+    void thePoseButtonDoesNothingWhileEnabled() {
+        var r = RobotFixture.reset(StartPose.CENTRE.pose(Alliance.Blue), false);
+        var chooser = r.autoChooser();
+        // The robot is shared between tests: first make sure the flag belongs to some other auto.
+        SimHarness.disable();
+        chooser.select(Auto.IDLE);
+        chooser.setPoseToStart();
+        SimHarness.enable();
+        chooser.select(Auto.ONE_LEFT);
+        chooser.update();
+        var before = r.drive().pose();
+        chooser.setPoseToStart(); // enabled in teleop: a stray dashboard click must not teleport odometry
+        SimHarness.run(0.1);
+        assertEquals(0, r.drive().pose().getTranslation().getDistance(before.getTranslation()), 0.05);
+        assertFalse(chooser.poseSetForSelected());
+    }
+
+    @Test
     void poseFlagClearsWhenSelectionChanges() {
         var chooser = RobotFixture.reset(StartPose.CENTRE.pose(Alliance.Blue), false).autoChooser();
+        SimHarness.disable();
         chooser.select(Auto.ONE_LEFT);
         chooser.update();
         chooser.setPoseToStart();
@@ -148,11 +187,25 @@ class AutoMatchTest {
         assertFalse(chooser.poseSetForSelected());
     }
 
+    /**
+     * With the coral sensor dead no leg can end on its sensor, so every leg must end on its timeout:
+     * the routine is then bounded by the sum of its leg timeouts (5 legs of 6 s) instead of hanging.
+     * Scoring legs run blind rather than skip, so the preload still scores.
+     */
     @Test
     void deadCoralSensorEndsLegsOnTimeout() {
         var h = AutoHarness.start(Auto.THREE_RIGHT_ECD, Alliance.Blue, () -> RobotFixture.get().sim().setCoralSensorConnected(false));
-        SimHarness.run(15.0);
-        assertFalse(h.commandStillRunningALeg(), "a leg is still waiting on a sensor that will never answer");
-        assertTrue(h.sim().coralScored().isEmpty());
+        double boundS = 5 * 6.0 + 1.0;
+        double elapsed = 0;
+        while (h.commandStillRunningALeg() && elapsed < boundS) {
+            SimHarness.run(0.5);
+            elapsed += 0.5;
+        }
+        assertFalse(h.commandStillRunningALeg(), "still running after " + boundS + " s: a leg is waiting on a sensor that will never answer");
+        var scored = h.sim().coralScored();
+        System.out.println("DEAD SENSOR: routine ended after " + elapsed + " s, scored " + scored);
+        assertTrue(scored.stream().anyMatch(sc -> sc.branch() == Reef.Branch.E && sc.timeS() <= 15.0),
+                "the preload should still score inside the auto period, scored " + scored);
+        assertTrue(h.keepOutNeverViolated(), "keep-out broken at " + h.firstViolation());
     }
 }

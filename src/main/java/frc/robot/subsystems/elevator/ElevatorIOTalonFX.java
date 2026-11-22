@@ -98,6 +98,8 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
         BaseStatusSignal.setUpdateFrequencyForAll(FAST_SIGNAL_HZ, position, velocity);
         BaseStatusSignal.setUpdateFrequencyForAll(SLOW_SIGNAL_HZ, appliedVolts, statorAmps, supplyAmps);
         BaseStatusSignal.setUpdateFrequencyForAll(20, followerPosition);
+        // Consume the reset flag from before this code started, so later reports mean a reboot while running.
+        left.hasResetOccurred();
     }
 
     /** True while the carriage is on the home switch. Overridden by the simulation. */
@@ -116,6 +118,7 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
         in.appliedVolts = appliedVolts.getValueAsDouble();
         in.statorAmps = statorAmps.getValueAsDouble();
         in.supplyAmps = supplyAmps.getValueAsDouble();
+        in.resetOccurred = left.hasResetOccurred();
     }
 
     @Override
@@ -133,6 +136,11 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
     @Override
     public void zero() {
         left.setPosition(0);
+        setSoftLimits(true);
+    }
+
+    @Override
+    public void keepZero() {
         setSoftLimits(true);
     }
 

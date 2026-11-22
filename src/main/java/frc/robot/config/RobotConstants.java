@@ -42,6 +42,14 @@ public final class RobotConstants {
         public static final double BUMPER_FACE_FROM_CENTRE_IN = 17.4; // PLACEHOLDER(drawing)
         public static final double MAX_SPEED_MPS = 4.67;
         public static final double ROBOT_MASS_LB = 140; // PLACEHOLDER(drawing)
+
+        /**
+         * Steady acceleration that lifts the far wheels, in g, by carriage height (inches): the lowest of
+         * forward, back and sideways on drawing R-001 (rev2 balance table, battery and bumpers on).
+         */
+        public static final double[] TIP_CARRIAGE_IN = {0, 33, 66};
+
+        public static final double[] TIP_ACCEL_G = {1.07, 0.70, 0.51};
     }
 
     /** Elevator carriage. Units are inches of carriage travel. */

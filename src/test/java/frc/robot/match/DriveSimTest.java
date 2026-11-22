@@ -99,6 +99,27 @@ class DriveSimTest {
         assertTrue(scaledM < fullSpeedM / 2, "scaled run covered " + scaledM + " m against " + fullSpeedM);
     }
 
+    private double speedMps() {
+        var v = RobotState.get().speeds();
+        return Math.hypot(v.vxMetersPerSecond, v.vyMetersPerSecond);
+    }
+
+    @Test
+    void accelLimitSlowsBothStartAndStop() {
+        placeAt(OPEN_FIELD);
+        drive.setAccelLimitSource(() -> 2.0);
+        drive.setTeleopInput(1, 0, 0);
+        SimHarness.run(0.5);
+        assertTrue(speedMps() <= 2.0 * 0.5 + 0.3, "half a second at 2 m/s^2 reached " + speedMps() + " m/s");
+        assertTrue(speedMps() >= 2.0 * 0.5 - 0.4, "the robot should still be speeding up, at " + speedMps());
+        SimHarness.run(0.5);
+        double before = speedMps();
+        drive.setTeleopInput(0, 0, 0);
+        SimHarness.run(0.25);
+        assertTrue(speedMps() >= before - 2.0 * 0.25 - 0.3, "stopped faster than 2 m/s^2: " + before + " to " + speedMps());
+        drive.setAccelLimitSource(() -> Double.POSITIVE_INFINITY);
+    }
+
     @Test
     void speedScaleAlsoCapsDriveToPoint() {
         placeAt(OPEN_FIELD);

@@ -23,24 +23,26 @@ Rule: when a value is confirmed, change it and delete its `PLACEHOLDER` comment 
 - **Odometry drift in simulation.** Straight driving and turning on the spot track the true pose to a few millimetres. Driving while turning drifts about 0.07 m over 1.5 s, from module steer lag and scrub that maple-sim models; the reef position fix corrects it.
 - **Wrist remote-sensor frame rate.** The wrist motor closes its loop on the CANdi's PWM1 frames. At 50 Hz those frames went stale whenever CTRE's swerve odometry thread was running, and the motor read 0 degrees while the encoder read -90. They now run at 250 Hz, and `Wrist` distrusts any reading where the motor and the encoder disagree by more than 5 degrees. Check the CAN bus load on the real robot with everything running.
 - **Robot-level tests share one robot.** Phoenix's simulator slows as devices are created and closed, so `TeleopCycleTest` (and the autos test) build one `RobotContainer` per class through `testutil/RobotFixture` and reset it between tests, instead of building one per test.
+- **Lost sensors and lost positions.** A CANrange that stops answering reports "no piece" (so no auto leg waits on it), but the superstructure keeps the last known piece for its interlocks (algae carry, hold voltage) until a push out of `EJECT_CLEARS_S` clears it. A score with the coral sensor offline pushes for the full `RELEASE_TIMEOUT_S`. The elevator keeps a zero it finds at start-up above 1 in (a robot-code restart; an unpowered carriage falls to the bottom); if its motor controller reboots while running it stops, raises "Elevator lost its position", and waits for the carriage to be lowered by hand and the code restarted. Check on the robot that the Talon really keeps its position across a code restart.
+- **Drive acceleration limit.** The drive holds every change of field velocity to `TIP_SAFETY` (80 %) of the tipping acceleration on drawing R-001 at the present carriage height: about 8.4 m/s^2 stowed, 4.0 m/s^2 at full height.
 
 ## Every placeholder in the code
 
 Generated from the source on 2026-11-22. Re-check the count with `grep -rn "PLACEHOLDER(" src/main/java | wc -l`; a line with two reasons is one line.
 
-78 lines in `src/main/java` carry a placeholder.
+82 lines in `src/main/java` carry a placeholder.
 
 | Reason | Where | Value |
 | --- | --- | --- |
 | `drawing` | [RobotConstants.java:41](../src/main/java/frc/robot/config/RobotConstants.java#L41) | `COUPLING_RATIO = 50.0 / 14.0` |
 | `drawing` | [RobotConstants.java:42](../src/main/java/frc/robot/config/RobotConstants.java#L42) | `BUMPER_FACE_FROM_CENTRE_IN = 17.4` |
 | `drawing` | [RobotConstants.java:44](../src/main/java/frc/robot/config/RobotConstants.java#L44) | `ROBOT_MASS_LB = 140` |
-| `drawing` | [RobotConstants.java:64](../src/main/java/frc/robot/config/RobotConstants.java#L64) | `STAGE_A_LB = 5` |
-| `drawing` | [RobotConstants.java:65](../src/main/java/frc/robot/config/RobotConstants.java#L65) | `STAGE_B_LB = 4` |
-| `drawing` | [RobotConstants.java:84](../src/main/java/frc/robot/config/RobotConstants.java#L84) | `MOI_KGM2 = 0.39` |
-| `drawing` | [RobotConstants.java:97](../src/main/java/frc/robot/config/RobotConstants.java#L97) | `MOI_KGM2 = 0.0015` |
-| `drawing` | [RobotConstants.java:107](../src/main/java/frc/robot/config/RobotConstants.java#L107) | `MOI_KGM2 = 0.003` |
-| `drawing` | [RobotConstants.java:116](../src/main/java/frc/robot/config/RobotConstants.java#L116) | `FORWARD_IN = 12.0` |
+| `drawing` | [RobotConstants.java:72](../src/main/java/frc/robot/config/RobotConstants.java#L72) | `STAGE_A_LB = 5` |
+| `drawing` | [RobotConstants.java:73](../src/main/java/frc/robot/config/RobotConstants.java#L73) | `STAGE_B_LB = 4` |
+| `drawing` | [RobotConstants.java:92](../src/main/java/frc/robot/config/RobotConstants.java#L92) | `MOI_KGM2 = 0.39` |
+| `drawing` | [RobotConstants.java:105](../src/main/java/frc/robot/config/RobotConstants.java#L105) | `MOI_KGM2 = 0.0015` |
+| `drawing` | [RobotConstants.java:115](../src/main/java/frc/robot/config/RobotConstants.java#L115) | `MOI_KGM2 = 0.003` |
+| `drawing` | [RobotConstants.java:124](../src/main/java/frc/robot/config/RobotConstants.java#L124) | `FORWARD_IN = 12.0` |
 | `drawing` | [Setpoints.java:10](../src/main/java/frc/robot/config/Setpoints.java#L10) | `L1(5, -35),` |
 | `drawing` | [Setpoints.java:18](../src/main/java/frc/robot/config/Setpoints.java#L18) | `PROCESSOR(1.75, 15)` |
 | `drawing` | [TunerConstants.java:65](../src/main/java/frc/robot/subsystems/drive/TunerConstants.java#L65) | `STEER_INERTIA_KGM2 = 0.01` |
@@ -65,19 +67,23 @@ Generated from the source on 2026-11-22. Re-check the count with `grep -rn "PLAC
 | `tuning` | [AutoFactory.java:37](../src/main/java/frc/robot/autos/AutoFactory.java#L37) | `STATION_LEG_TIMEOUT_S = 6.0` |
 | `tuning` | [AutoFactory.java:38](../src/main/java/frc/robot/autos/AutoFactory.java#L38) | `ALGAE_LEG_TIMEOUT_S = 4.0` |
 | `tuning` | [AutoFactory.java:39](../src/main/java/frc/robot/autos/AutoFactory.java#L39) | `NET_LEG_TIMEOUT_S = 4.0` |
-| `tuning` | [ScoreCommands.java:36](../src/main/java/frc/robot/commands/ScoreCommands.java#L36) | `ALGAE_SPEED_MPS = 2.0` |
-| `tuning` | [RobotConstants.java:60](../src/main/java/frc/robot/config/RobotConstants.java#L60) | `CRUISE_IN_PER_S = 65` |
-| `tuning` | [RobotConstants.java:85](../src/main/java/frc/robot/config/RobotConstants.java#L85) | `CRUISE_DEG_PER_S = 400` |
-| `tuning` | [RobotConstants.java:86](../src/main/java/frc/robot/config/RobotConstants.java#L86) | `ACCEL_DEG_PER_S2 = 1600` |
-| `tuning` | [RobotConstants.java:95](../src/main/java/frc/robot/config/RobotConstants.java#L95) | `STATOR_LIMIT_A = 40` |
-| `tuning` | [Superstructure.java:40](../src/main/java/frc/robot/subsystems/Superstructure.java#L40) | `FULL_SPEED_MAX_IN = 23.0` |
-| `tuning` | [Superstructure.java:42](../src/main/java/frc/robot/subsystems/Superstructure.java#L42) | `MIN_SPEED_SCALE = 0.35` |
-| `tuning` | [AlgaeClaw.java:9](../src/main/java/frc/robot/subsystems/claw/AlgaeClaw.java#L9) | `INTAKE_VOLTS = 6` |
-| `tuning` | [AlgaeClaw.java:10](../src/main/java/frc/robot/subsystems/claw/AlgaeClaw.java#L10) | `HOLD_VOLTS = 1.5` |
-| `tuning` | [AlgaeClaw.java:11](../src/main/java/frc/robot/subsystems/claw/AlgaeClaw.java#L11) | `EJECT_VOLTS = -8` |
-| `tuning` | [CoralRollers.java:9](../src/main/java/frc/robot/subsystems/coral/CoralRollers.java#L9) | `INTAKE_VOLTS = 4` |
-| `tuning` | [CoralRollers.java:10](../src/main/java/frc/robot/subsystems/coral/CoralRollers.java#L10) | `HOLD_VOLTS = 0.5` |
-| `tuning` | [CoralRollers.java:11](../src/main/java/frc/robot/subsystems/coral/CoralRollers.java#L11) | `EJECT_VOLTS = -6` |
+| `tuning` | [ScoreCommands.java:33](../src/main/java/frc/robot/commands/ScoreCommands.java#L33) | `MIN_RELEASE_S = 0.25` |
+| `tuning` | [ScoreCommands.java:55](../src/main/java/frc/robot/commands/ScoreCommands.java#L55) | `ALGAE_SPEED_MPS = 2.0` |
+| `tuning` | [RobotConstants.java:68](../src/main/java/frc/robot/config/RobotConstants.java#L68) | `CRUISE_IN_PER_S = 65` |
+| `tuning` | [RobotConstants.java:93](../src/main/java/frc/robot/config/RobotConstants.java#L93) | `CRUISE_DEG_PER_S = 400` |
+| `tuning` | [RobotConstants.java:94](../src/main/java/frc/robot/config/RobotConstants.java#L94) | `ACCEL_DEG_PER_S2 = 1600` |
+| `tuning` | [RobotConstants.java:103](../src/main/java/frc/robot/config/RobotConstants.java#L103) | `STATOR_LIMIT_A = 40` |
+| `tuning` | [Superstructure.java:41](../src/main/java/frc/robot/subsystems/Superstructure.java#L41) | `FULL_SPEED_MAX_IN = 23.0` |
+| `tuning` | [Superstructure.java:43](../src/main/java/frc/robot/subsystems/Superstructure.java#L43) | `MIN_SPEED_SCALE = 0.35` |
+| `tuning` | [Superstructure.java:46](../src/main/java/frc/robot/subsystems/Superstructure.java#L46) | `TIP_SAFETY = 0.8` |
+| `tuning` | [AlgaeClaw.java:10](../src/main/java/frc/robot/subsystems/claw/AlgaeClaw.java#L10) | `INTAKE_VOLTS = 6` |
+| `tuning` | [AlgaeClaw.java:11](../src/main/java/frc/robot/subsystems/claw/AlgaeClaw.java#L11) | `HOLD_VOLTS = 1.5` |
+| `tuning` | [AlgaeClaw.java:12](../src/main/java/frc/robot/subsystems/claw/AlgaeClaw.java#L12) | `EJECT_VOLTS = -8` |
+| `tuning` | [AlgaeClaw.java:15](../src/main/java/frc/robot/subsystems/claw/AlgaeClaw.java#L15) | `EJECT_CLEARS_S = 0.3` |
+| `tuning` | [CoralRollers.java:10](../src/main/java/frc/robot/subsystems/coral/CoralRollers.java#L10) | `INTAKE_VOLTS = 4` |
+| `tuning` | [CoralRollers.java:11](../src/main/java/frc/robot/subsystems/coral/CoralRollers.java#L11) | `HOLD_VOLTS = 0.5` |
+| `tuning` | [CoralRollers.java:12](../src/main/java/frc/robot/subsystems/coral/CoralRollers.java#L12) | `EJECT_VOLTS = -6` |
+| `tuning` | [CoralRollers.java:15](../src/main/java/frc/robot/subsystems/coral/CoralRollers.java#L15) | `EJECT_CLEARS_S = 0.3` |
 | `tuning` | [SwerveIOCTRE.java:21](../src/main/java/frc/robot/subsystems/drive/SwerveIOCTRE.java#L21) | `HEADING_KP = 7.0` |
 | `tuning` | [SwerveIOCTRE.java:22](../src/main/java/frc/robot/subsystems/drive/SwerveIOCTRE.java#L22) | `HEADING_KD = 0.2` |
 | `tuning` | [SwerveSubsystem.java:28](../src/main/java/frc/robot/subsystems/drive/SwerveSubsystem.java#L28) | `TELEOP_MAX_OMEGA_RAD_PER_S = 1.5 * 2 * Math.PI` |

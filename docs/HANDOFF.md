@@ -1,148 +1,100 @@
 # Robot A code: handoff
 
-Written 2026-11-21 at commit `29b5e64` plus this file. Read this before the plan. It records where the
-build stopped, the decisions that override the plan's text, and what each remaining task needs to know.
+Updated 2026-11-22. Read this before the plan. It records where the build stands, the decisions that
+override the plan's text, and what is still open.
 
 ## Prompt to start the next session
 
 Paste this into a new session opened on this folder:
 
-> Continue building the Robot A robot code in this repository. Read `docs/HANDOFF.md` first, then the
-> plan at `docs/superpowers/plans/2026-11-21-robot-a-code.md`. Tasks 1 to 10 are done and committed.
-> Start at Task 11 and work through Task 17 and Task 19 in order, yourself, in this session: no
-> subagent per task. For each task write the tests first, watch them fail, implement, run
-> `./gradlew build simTest`, and commit with the message the plan gives. Where this handoff and the plan
-> disagree, the handoff wins. Do not start Task 18 or the climber until I give you the CAD files.
-> Do not push to any remote. When every task is done, run one independent review of the whole branch
-> and report its findings to me before fixing anything.
+> Continue the Robot A robot code in this repository. Read `docs/HANDOFF.md` first, then the plan at
+> `docs/superpowers/plans/2026-11-21-robot-a-code.md`. Tasks 1 to 17 and 19 are done, committed and
+> reviewed. Do not start Task 18 or the climber until I say the CAD corrections listed under Open
+> problems are in. Do not push to any remote. Ask me before changing `Ports.java` or the keep-out table.
 
 ## Where things are
 
 | Thing | Location |
 |---|---|
 | Code | this repository, branch `robot-a`. Nothing has been pushed anywhere. |
-| Plan | `docs/superpowers/plans/2026-11-21-robot-a-code.md` (19 tasks, 4 milestones) |
-| Design | Claude Doc "Robot A code design", https://claude.ai/artifact/6YYpCCkQaGtHnapUWu4cRd (approved 2026-11-21) |
-| Unconfirmed values | `docs/open-numbers.md`; find them with `grep -rn "PLACEHOLDER(" src` |
-| Team 2910 reference code | public MIT repos (2025 and 2026 robot code). Not vendored here. |
+| Plan | `docs/superpowers/plans/2026-11-21-robot-a-code.md` (19 tasks) |
+| Design | `docs/superpowers/specs/2026-11-21-robot-a-code-design.md`, exported from the Claude Doc "Robot A code design" (https://claude.ai/artifact/6YYpCCkQaGtHnapUWu4cRd, rev 36) |
+| Wiring | `docs/wiring.md` (the design's CAN and power tables) |
+| Unconfirmed values | `docs/open-numbers.md`: every `PLACEHOLDER(...)` line (82) and the known simulation limits |
+| CAD package rev2 | `C:\Users\klape\Downloads\robotA_cad_package_rev2_2026-11-21.zip` (not in the repo; see Open problems) |
 
-## Build and test
+## Build and test (on Kevin's Windows PC)
 
-- `./gradlew build` compiles and runs the unit tests (59, about 5 s). On Windows use `.\gradlew`.
-- `./gradlew simTest` runs the physics tests tagged `sim` (35, about 90 s). They run in real time because
-  Phoenix's simulated devices do, so they cannot be sped up. Run one class with
-  `./gradlew simTest --tests '*WristSimTest'`.
-- `./gradlew simulateJava` starts the full robot simulation; add `-PheadlessSim` on a machine with no display.
-- Stack: Java 17, WPILib 2026 (GradleRIO 2026.2.1), AdvantageKit 26.0.2, Phoenix 6 26.3.0, maple-sim
-  0.4.0-beta (the published `0.4.0-beta-obstacles-fix` does not resolve; stay on `0.4.0-beta`), JUnit 5.
+- Set `JAVA_HOME` to WPILib's JDK, `C:\Users\Public\wpilib\2026\jdk`; there is no other Java on the PATH.
+- VS Code's Java extension holds directories under `build/` open, so a recompiling Gradle run fails with
+  "Unable to delete directory". Run Gradle with an init script that moves the build directory out of
+  the repository (`allprojects { layout.buildDirectory = new File("<elsewhere>") }`), or close VS Code.
+- `./gradlew build` compiles and runs the 76 unit tests (`test`, layer 1, about 10 s).
+- `./gradlew simTest` runs the 121 simulation tests tagged `sim` (about 11.5 minutes; Phoenix's simulated
+  devices run in real time). Each test class runs in its own JVM (`forkEvery = 1`).
+- `./gradlew simulateJava` starts the robot simulation; add `-PheadlessSim` with no display.
 
-## Done (tasks 1 to 10)
+## Done
 
-| Task | What exists | Tests |
-|---|---|---|
-| 1 Scaffold | Gradle project, vendordeps, `Robot`, `RobotContainer`, `test` and `simTest` tasks | builds, sim starts |
-| 2 CAN map | `config/Ports` | `PortsTest` |
-| 3 Constants | `config/RobotConstants`, `config/Setpoints` | `UnitsTest` |
-| 4 Keep-out table | `config/KeepOut` | `KeepOutTest` |
-| 5 Planner | `subsystems/SuperstructurePlanner` | `SuperstructurePlannerTest` |
-| 6 Field geometry | `field/Reef`, `Station`, `StartPose`, `AllianceFlip` | `ReefTest`, `StationTest` |
-| 7 Single-tag fix | `subsystems/vision/SingleTagFix`, `CameraModel`, `TagObservation` | `SingleTagFixTest` |
-| 8 Drive-to-point | `subsystems/drive/DriveToPoint` | `DriveToPointTest` |
-| 9 Elevator | `subsystems/elevator/*`, `testutil/SimHarness` | `ElevatorSimTest` (17, sim) |
-| 10 Wrist | `subsystems/wrist/*`, `testutil/AlertProbe` | `WristSimTest` (18, sim) |
+| Task | What exists |
+|---|---|
+| 1 to 8 | Scaffold, `Ports`, constants, keep-out table, planner, field geometry, single-tag fix, drive-to-point |
+| 9, 10 | Elevator and wrist with physics |
+| 11 | Coral rollers and algae claw, with `PieceSensor` |
+| 12 | `Superstructure` |
+| 13 | CTRE swerve behind `SwerveIO`, maple-sim field, `RobotState` |
+| 14 | Vision (`VisionIOLimelight`, `VisionIOSim`, `Vision`) |
+| 15 | `ScoreCommands`, driver bindings in `RobotContainer`, `DeviceCheck`, `SimulatedRobot` |
+| 16 | `ScoreJudge`, game pieces, `Barge` |
+| 17 | Autos: `Auto`, `AutoProgram`, `AutoRoutine`, `AutoFactory`, `AutoChooser` |
+| 19 | `docs/wiring.md`, `README.md`, open numbers, the design export |
 
-Tasks 1 to 8 each had an independent review. Tasks 9 and 10 were checked by the author only.
+One independent review of the whole branch was run after Task 19. Its critical finding and all five
+important findings are fixed (commits after `0f3943f`). Its minor findings are listed at the end.
+
+In simulation every auto scores exactly its branches on both alliances; the three-coral autos land the
+third coral at about 14.0 s.
 
 ## Decisions that override the plan's text
 
-1. **Planner, algae.** The keep-out table outranks the "wrist at or above +10° with algae" rule: the floor
-   applies only where the current zone's wrist range reaches +10°. With algae and a STOW goal the planner
-   parks at (1.75 in, +10°) and never reports the goal reached. **Task 12 must map a stow request while
-   holding algae to `ALGAE_CARRY`.**
-2. **Planner, joint targets.** The carriage target is clamped into the span legal for both the measured
-   wrist and the commanded wrist target. Measurements are clamped to the soft limits first; a NaN
-   measurement throws `IllegalArgumentException`.
-3. **Reef routing (Task 6).** Via points are on a 2.0 m circle at the six corner bearings (30° + 60°·k),
-   not 1.75 m. `pathClear` is false only when the segment's closest point to the reef centre is strictly
-   inside the segment and nearer than 1.69 m, so leaving from or arriving at a scoring pose is clear.
-   `route` goes direct when both ends are on the same reef face. **Tasks 15 and 17: do not assume every
-   leg of a route passes `pathClear`** (same-face legs may not).
-4. **Drive-to-point (Task 8).** Speed is `min(max(0, PD) + friction, maxSpeed)`, not `|PD|`. The derivative
-   resets when the target changes.
-5. **Constants.** Physical dimensions and gear ratios live in `RobotConstants`. Gains, tolerances and
-   algorithm thresholds live in the class that uses them, each gain marked `// PLACEHOLDER(tuning)`.
-6. **Elevator (Task 9).** `CRUISE_IN_PER_S` is 65, not 110 (see Open problems). Soft limits are off until
-   the elevator is zeroed and while homing volts are applied. `Elevator` and the IO classes have `close()`.
-   A kA gain was added.
-7. **Sim harness.** `SimHarness` has `reset()`, `DT` and `lastDtSeconds()` beyond the plan. It runs the
-   registered physics steps three times per 20 ms tick, 5 ms apart, then waits 6 ms before the scheduler
-   reads signals. One physics step per tick made Phoenix's 1 kHz loops see a sawtooth and draw fake current.
-8. **Wrist (Task 10).** "Encoder connected" means the CANdi's PWM1 rise-to-rise period is 500 to 2000
-   microseconds (Phoenix reports that signal in microseconds; the CANdi has no connected flag). The wrist
-   holds in brake until its first goal. The alert is error level. `WristIOSim.trueWristDeg()` was added.
-
-## Patterns the remaining tasks must follow
-
-- **Mechanism shape:** `XxxIO` (interface with `@AutoLog` inputs), `XxxIOTalonFX` (real devices, used on the
-  robot and in sim), `XxxIOSim extends XxxIOTalonFX` (feeds Phoenix sim states from a WPILib physics
-  model), `Xxx extends SubsystemBase`. Copy the wrist's files as the template.
-- **Sim test fixture** (see `WristSimTest.setUp`): `SimHarness.reset()`; build the sim IO and subsystem;
-  `SimHarness.enable()`; `SimHarness.run(0.06)`; only then
-  `SimHarness.register(() -> sim.simulate(SimHarness.lastDtSeconds()))`; `SimHarness.run(0.14)`.
-  The simulated controllers outlive each test and keep the last test's request; the first three ticks let
-  the new subsystem replace it before the physics can respond. Call `SimHarness.reset()` and the
-  `close()` methods in `@AfterEach`.
-- **Alerts in tests:** `AlertProbe.active("text")`.
-- **Assert on the truth, not only the sensor.** Sim IO classes expose the physics state
-  (`trueWristDeg()`); assert on it as well as on the subsystem's reading.
-- **Phoenix facts found the hard way:** Phoenix simulates the CANdi (`CANdiSimState.setPwm1Position`,
-  `setPwm1Connected`, `setPwm1RiseRise`). Check with `javap` on the Phoenix jar whether it simulates the
-  CANrange before Task 11; if not, feed the range at the IO layer and note it in `docs/open-numbers.md`.
-  `StatusSignal.getValueAsDouble()` returns the signal's own unit, which is not always SI.
-- **Tests:** every test has real assertions; where the plan shows a comment for a test body, write the
-  assertions the comment describes. Never weaken a limit to make a test pass.
-- **Commits:** one per task with the plan's message, plus fix commits. Nothing is pushed.
-
-## Remaining tasks
-
-| Task | Carry-in notes |
-|---|---|
-| 11 Coral rollers and algae claw | Follow the patterns above. Claw stator limit test needs the three-step harness (already in place). |
-| 12 Superstructure | Decision 1 (algae + stow goes to `ALGAE_CARRY`). The planner throws on NaN, so guard untrusted wrist readings before calling it. An untrusted wrist or un-homed elevator must hold the other axis still. |
-| 13 Drivetrain and `RobotState` | CTRE swerve API behind an IO interface, on the `drive` CAN bus. No time-synced signals or FOC when `PRO_LICENSED` is false. |
-| 14 Vision | Reject a tag fix that is non-finite, or whose `heightPx` is zero or tiny, before it reaches the pose estimate (`SingleTagFix.distanceM` does not guard this). |
-| 15 Scoring commands, controls, device check | Decision 3. |
-| 16 Game pieces and score judge | maple-sim arena `seasonspecific.reefscape2025`. |
-| 17 Autos | Decision 3. Start poses are `PLACEHOLDER(field-check)`. |
-| 18 AdvantageScope model | **Blocked** until the CAD STEP files are final. |
-| 19 Wiring doc, README, full run | Also export the design doc into `docs/superpowers/specs/`. |
-
-After Task 19: one independent whole-branch review (the plan's Review Focus section lists five failure
-modes to check), then decide with Kevin how to finish the branch.
+1. **Planner, algae.** The keep-out table outranks the "+10 degrees with algae" rule. STOW with an algae maps to `ALGAE_CARRY`.
+2. **Planner, judging.** Measurements are clamped to the soft limits; a NaN measurement throws. The measured wrist is judged 1 degree worse than it reads. Since `2f80fc3` `next()` also takes both velocities: the wrist target must be legal over every zone the carriage passes before it can stop (one loop plus Motion Magic deceleration), and the carriage only moves where the wrist's whole stopping sweep is legal.
+3. **Reef routing.** Via points on a 2.0 m circle; same-face legs go direct and may fail `pathClear`.
+4. **Drive-to-point.** Speed is `min(max(0, PD) + friction, maxSpeed)`; the derivative resets on a new target.
+5. **Constants.** Dimensions and ratios in `RobotConstants`; gains and thresholds in the class that uses them, marked `PLACEHOLDER(tuning)`.
+6. **Elevator.** Cruise 65 in/s, not 110 (Open problem 1). A start-up reading above 1 in is a zero kept from before a code restart and is kept without moving. A motor-controller reboot while running marks the position lost: no motion, an alert, and only a code restart clears it.
+7. **Sim harness.** Three physics steps per 20 ms tick. Robot-level test classes share one robot per class (`testutil/RobotFixture`) because Phoenix's simulator slows as devices are created and closed.
+8. **Wrist.** Trusted only while the CANdi's PWM period is valid, the angle is plausible, and the motor and encoder agree within 5 degrees (debounced 0.1 s). The CANdi's PWM frames run at 250 Hz.
+9. **Untrusted wrist** freezes the carriage where it is (not "at or below 1.0 in").
+10. **Release.** Starts only at the pose, then runs until cleared; a score finishes only once the release has really started, and with the sensor offline it pushes for the full 1.0 s.
+11. **Sensors offline.** `hasCoral()`/`hasAlgae()` read absent; the superstructure keeps the last known piece for its interlocks until a long enough push out. An auto scoring leg runs blind when the coral sensor is offline instead of skipping.
+12. **Drive.** Every drive request goes through `FieldSpeedsRequest` so FOC follows `PRO_LICENSED`. The drive's acceleration is held to 80 % of the tipping acceleration on drawing R-001 at the present carriage height. The first drive test targets branch H, not A (A is behind the reef from the centre start).
+13. **Autos.** An auto started without the start-pose button raises an alert and puts the estimate on its start pose. The button does nothing while enabled.
+14. **Simulated bus load.** Mechanism IO classes call `optimizeBusUtilization`; the simulated drivetrain runs odometry at 100 Hz (the real robot keeps 250 Hz).
 
 ## Open problems
 
-1. **Elevator cruise speed in simulation.** At the design speed of 110 in/s the carriage hits the top hard
-   stop. A trace at 110 in/s shows the Motion Magic *reference* is at fault, not the physics: its velocity
-   drops from 110 to about 100 in/s at the start of the slow-down and then barely falls (about 12 in/s²
-   instead of 231.65) until the reference reaches the target. Below about 70 in/s the profile is normal.
-   It does not depend on gains, FOC, soft limits or the physics step rate. Not yet tried: keeping Phoenix
-   in rotor rotations (`SensorToMechanismRatio = 1`) and converting to inches in the IO class, which is
-   the first thing to test. Until this is understood, do not raise the cruise speed on a real robot near
-   the top of travel.
-2. **CAD package.** Still needed from Kevin: `robotA_can_map.csv`, the README and the layout and weight
-   drawings. The climber (two rope winches), the funnel servo latch and the wrist climb pose are not in
-   the design or the plan. They need a design update and Kevin's sign-off before any code.
-3. **Unstow gap in the new keep-out table.** The CAD's six-zone table (below 1.25 in: stow only; 1.25 to
-   7: at or above -75°; 7 to 9: -60°; 9 to 15: -45°; 15 to 23: -40°; above 23: any) leaves no carriage
-   height at which the wrist can turn out of stow. The code still uses the four-zone table with a
-   `PLACEHOLDER(funnel-redesign)` limit of -38° from 6 to 23 in. Do not switch tables until this is resolved.
+1. **Elevator cruise speed in simulation** (unchanged). At 110 in/s the Motion Magic reference stops decelerating properly and the carriage hits the top. First thing to try: keep Phoenix in rotor rotations (`SensorToMechanismRatio = 1`) and convert in the IO class. Do not raise the speed on the robot near the top of travel until this is understood.
+2. **CAD rev2 disagrees with the approved design.** Feedback sent to the design agent on 2026-11-22. Waiting on it:
+   - the CAN map (bus name `canivore` against `drive`; Pigeon 10 against 2; most mechanism IDs shifted; climber on 57/58; CANranges on 61/62);
+   - the wrist encoder wired to roboRIO DIO 1 instead of the CANdi the design (decision 1) and the code use;
+   - the six-zone keep-out table still has no height where the wrist may be between -90 and -75 (no way out of stow);
+   - intake drawn at carriage 1.25 in, exactly on a zone boundary;
+   - breaker sizes for the moving harness (all 40 A in rev2, 30 A with 14 AWG in the design);
+   - the funnel latch servo, climber motors and pawl servos, which are not in the design yet.
+   Until it is settled, `Ports` and the four-zone keep-out table stay as they are.
+3. **Values to take from the CAD once it settles:** rollers and claw are Kraken X44 (the sim models X60); robot mass 146.45 lb on the field (code 140); bumper face 17.25 in (code 17.4); stage A and B weights; wrist inertia; Limelight position.
+4. **Task 18** (AdvantageScope model) can use `step/robotA_assembly_complete.step` from rev2, but should wait for the CAD corrections.
+5. **Climber**: needs a design-doc section and sign-off before any code (the CAD's climb sequence and interlocks are on drawing R-001).
 
-## Small findings left for the final review
+## Minor review findings still open
 
-- Planner: a NaN goal passes through as a NaN setpoint. `MARGIN_IN` equals `CARRIAGE_TOL_IN`, so a future
-  pose within 0.5 in of a blocked edge would never finish.
-- Reef: the test computes the reef centre the same way the code does, so nothing checks it independently.
-- Vision: a misleading "cosine test" comment in `CameraModel`; the noise path is untested.
-- Drive-to-point: no test for `dtSeconds <= 0`.
-- Elevator test class has its own `alertActive` helper; it could use `AlertProbe`.
+- `DeviceCheck` cannot report the PDH missing (constructing `PowerDistribution` does not fail), and runs only at boot.
+- A lost elevator leader (`connected` false) leaves a stale height feeding the planner; the wrist ignores `inputs.connected` (the agreement check covers most of it).
+- Vision applies fixes with no latency compensation (about 7 cm at 3 m/s); the README does not yet say how to set up the Limelight (name `limelight`, AprilTag pipeline, corner output, 1280 x 800) or that the CANivore must be named `drive`.
+- A score ends about 0.25 s after the coral sensor clears; check on the robot that the coral is clear by then.
+- simulateJava threading: `VisionIOSim` reads the true pose from the main thread while the 5 ms notifier steps the world; some subsystem fields are read across threads without `volatile` (simulation only).
+- `ElevatorIOTalonFX` does not call `optimizeBusUtilization` and relies on default current limits.
+- A home switch stuck closed zeroes wherever the carriage is.
+- From the first handoff: a NaN goal passes through the planner; `MARGIN_IN` equals `CARRIAGE_TOL_IN`; the reef-centre test is not independent; a misleading comment in `CameraModel`; no test for `dtSeconds <= 0`; `ElevatorSimTest` keeps its own alert helper.
+- README omits D-pad down (processor); a test comment calls positive pitch "nose-up".

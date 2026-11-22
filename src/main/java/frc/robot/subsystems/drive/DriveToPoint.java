@@ -32,7 +32,8 @@ public final class DriveToPoint {
      *
      * <p>The derivative term is zero on the first call and whenever the target changes, because
      * there is no previous distance for that target. It is also zero when {@code dtSeconds} is not
-     * positive.
+     * positive. The PD term is floored at zero, so a robot arriving faster than the loop wants
+     * coasts on the friction term instead of being sped up by a negative derivative.
      */
     public Output calculate(Translation2d current, Translation2d target, double maxSpeedMps, double dtSeconds) {
         Translation2d error = target.minus(current);

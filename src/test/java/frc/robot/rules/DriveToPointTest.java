@@ -28,6 +28,13 @@ class DriveToPointTest {
         assertEquals(DriveToPoint.KP_AUTO * 0.2 + DriveToPoint.FRICTION_FRACTION * DriveK.MAX_SPEED_MPS, o.vyMps(), 1e-9);
     }
 
+    @Test void comingInHotDoesNotSpeedUp() {
+        c.calculate(new Translation2d(0.5, 0), new Translation2d(1, 0), 10, 0.02);
+        var o = c.calculate(new Translation2d(0.95, 0), new Translation2d(1, 0), 10, 0.02);
+        assertEquals(DriveToPoint.FRICTION_FRACTION * DriveK.MAX_SPEED_MPS, o.vxMps(), 1e-9);
+        assertEquals(0, o.vyMps(), 1e-9);
+    }
+
     @Test void approachingSlowsTheCommand() {
         c.calculate(new Translation2d(), new Translation2d(1, 0), 10, 0.02);
         var o = c.calculate(new Translation2d(0.05, 0), new Translation2d(1, 0), 10, 0.02);

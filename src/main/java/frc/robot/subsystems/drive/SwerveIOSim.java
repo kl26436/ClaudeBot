@@ -46,6 +46,12 @@ import org.ironmaple.simulation.seasonspecific.reefscape2025.Arena2025Reefscape;
 public class SwerveIOSim extends SwerveIOCTRE {
     private static final double WHEEL_COF = 1.2; // PLACEHOLDER(field-check)
 
+    /**
+     * Odometry rate in simulation. CTRE's 250 Hz on twelve simulated devices loads Phoenix's
+     * simulator enough that other devices' remote-sensor frames go stale; 100 Hz is plenty here.
+     */
+    private static final double SIM_ODOMETRY_HZ = 100;
+
     // Simulation-only module adjustments, as 2910 uses with maple-sim.
     private static final double SIM_STEER_KP = 70;
     private static final double SIM_STEER_KD = 4.5;
@@ -63,7 +69,7 @@ public class SwerveIOSim extends SwerveIOCTRE {
 
     private SwerveIOSim(
             SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>[] modules) {
-        super(TunerConstants.DRIVETRAIN, modules);
+        super(TunerConstants.DRIVETRAIN, SIM_ODOMETRY_HZ, modules);
         arena = new Arena2025Reefscape();
         SimulatedArena.overrideInstance(arena);
         SimulatedArena.overrideSimulationTimings(Seconds.of(0.005), 1);

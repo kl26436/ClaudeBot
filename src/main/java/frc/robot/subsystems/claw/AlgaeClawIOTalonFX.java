@@ -7,6 +7,7 @@ import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANrange;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -56,6 +57,8 @@ public class AlgaeClawIOTalonFX implements AlgaeClawIO, AutoCloseable {
         rearStator = rear.getStatorCurrent();
         distance = range.getDistance();
         BaseStatusSignal.setUpdateFrequencyForAll(SIGNAL_HZ, velocity, appliedVolts, frontStator, rearStator, distance);
+        // Switch off every signal not set above, to keep the bus (and the simulator) light.
+        ParentDevice.optimizeBusUtilizationForAll(front, rear, range);
     }
 
     private static TalonFXConfiguration motorConfig(InvertedValue inverted) {

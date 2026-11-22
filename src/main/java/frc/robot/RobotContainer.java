@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.autos.AutoChooser;
 import frc.robot.commands.ScoreCommands;
 import frc.robot.config.Ports;
 import frc.robot.config.RobotConstants;
@@ -64,6 +65,7 @@ public class RobotContainer {
     private final Superstructure superstructure;
     private final Vision vision;
     private final SimulatedRobot sim;
+    private final AutoChooser autoChooser;
     private final List<AutoCloseable> closeables = new ArrayList<>();
     private final CommandXboxController controller = new CommandXboxController(0);
 
@@ -125,6 +127,7 @@ public class RobotContainer {
                 : new SimulatedRobot(driveSim, elevatorSim, wristSim, coralSim, clawSim, superstructure, coral, claw);
 
         drive.setSpeedScaleSource(superstructure::driveSpeedScale);
+        autoChooser = new AutoChooser(this);
         bindControls();
     }
 
@@ -203,12 +206,24 @@ public class RobotContainer {
         return vision;
     }
 
+    public Elevator elevator() {
+        return elevator;
+    }
+
+    public Wrist wrist() {
+        return wrist;
+    }
+
     public CoralRollers coral() {
         return coral;
     }
 
     public AlgaeClaw claw() {
         return claw;
+    }
+
+    public AutoChooser autoChooser() {
+        return autoChooser;
     }
 
     /** The simulated world, or null outside simulation. */

@@ -8,6 +8,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.hardware.CANdi;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.GravityTypeValue;
@@ -110,6 +111,8 @@ public class WristIOTalonFX implements WristIO, AutoCloseable {
         // went stale under CAN load and the motor fell back to reading 0 degrees.
         BaseStatusSignal.setUpdateFrequencyForAll(FAST_SIGNAL_HZ, position, velocity, absolutePosition, candi.getPWM1Velocity());
         BaseStatusSignal.setUpdateFrequencyForAll(SLOW_SIGNAL_HZ, appliedVolts, statorAmps, pwmPeriod);
+        // Switch off every signal not set above, to keep the bus (and the simulator) light.
+        ParentDevice.optimizeBusUtilizationForAll(motor, candi);
     }
 
     @Override

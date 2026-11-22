@@ -31,6 +31,15 @@ public class SwerveIOCTRE extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder> i
         super(TalonFX::new, TalonFX::new, CANcoder::new, constants, modules);
     }
 
+    /** As above, with the odometry thread at {@code odometryHz} instead of CTRE's default. */
+    @SafeVarargs
+    protected SwerveIOCTRE(
+            SwerveDrivetrainConstants constants,
+            double odometryHz,
+            SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>... modules) {
+        super(TalonFX::new, TalonFX::new, CANcoder::new, constants, odometryHz, modules);
+    }
+
     /** The robot's drivetrain, with the constants from {@link TunerConstants}. */
     public SwerveIOCTRE() {
         this(TunerConstants.DRIVETRAIN, TunerConstants.modules());

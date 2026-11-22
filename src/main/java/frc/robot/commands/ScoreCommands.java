@@ -141,6 +141,19 @@ public final class ScoreCommands {
         };
     }
 
+    /** Drive to a pose (around the reef if need be), the mechanism left as it is; finish on target. */
+    public static Command driveTo(RobotContainer r, Function<Alliance, Pose2d> target, double maxSpeedMps) {
+        return new RouteCommand(r, target, maxSpeedMps, false) {
+            @Override
+            boolean done() {
+                return onFinalLeg() && r.drive().atTarget();
+            }
+
+            @Override
+            void finish() {}
+        };
+    }
+
     /** Raise to the net and release the algae; the driver (or the auto) has already driven there. */
     public static Command netScore(RobotContainer r) {
         return releaseAlgaeAt(r, Wanted.NET);

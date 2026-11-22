@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.Timer;
 import frc.robot.commands.DeviceCheck;
 import frc.robot.sim.SimulatedRobot;
 import java.util.List;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.config.RobotConstants;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -84,6 +85,29 @@ public class Robot extends LoggedRobot {
         });
         simNotifier.setName("Simulation");
         simNotifier.startPeriodic(SIM_PERIOD_S);
+    }
+
+    private Command autoCommand;
+
+    @Override
+    public void disabledPeriodic() {
+        robotContainer.autoChooser().update();
+    }
+
+    @Override
+    public void autonomousInit() {
+        autoCommand = robotContainer.autoChooser().startAuto().orElse(null);
+        if (autoCommand != null) {
+            CommandScheduler.getInstance().schedule(autoCommand);
+        }
+    }
+
+    @Override
+    public void teleopInit() {
+        if (autoCommand != null) {
+            autoCommand.cancel();
+            autoCommand = null;
+        }
     }
 
     @Override

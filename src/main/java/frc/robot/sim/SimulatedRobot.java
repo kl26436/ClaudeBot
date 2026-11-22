@@ -289,9 +289,25 @@ public class SimulatedRobot extends SubsystemBase {
         coralEjectingSinceS = Double.NaN;
         algaeEjectingSinceS = Double.NaN;
         coralIo.setCoralPresent(false);
+        coralIo.setRangeConnected(true);
         clawIo.setAlgaePresent(false);
         updateWristLoad();
         drive.arena().clearGamePieces();
+    }
+
+    /** Unplug or replug the coral CANrange. */
+    public synchronized void setCoralSensorConnected(boolean connected) {
+        coralIo.setRangeConnected(connected);
+    }
+
+    /** Where the carriage really is, in inches. */
+    public synchronized double trueCarriageIn() {
+        return elevator.trueCarriageIn();
+    }
+
+    /** Where the wrist really is, in degrees. */
+    public synchronized double trueWristDeg() {
+        return wrist.trueWristDeg();
     }
 
     /** Put a coral in the rollers, as loaded before a match. */

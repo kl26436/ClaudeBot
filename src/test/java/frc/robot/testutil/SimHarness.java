@@ -43,6 +43,18 @@ public final class SimHarness {
     private static boolean halInitialised = false;
     private static long lastTickNs = 0;
     private static double lastDtSeconds = DT;
+    private static double maxDtSeconds = 0;
+    private static int longSteps = 0;
+    private static int stepCount = 0;
+
+    /** Physics-step timing since the last call: the longest step and how many exceeded 12 ms. */
+    public static String takeStepStats() {
+        String out = String.format("max step %.1f ms, %d of %d steps over 12 ms", maxDtSeconds * 1000, longSteps, stepCount);
+        maxDtSeconds = 0;
+        longSteps = 0;
+        stepCount = 0;
+        return out;
+    }
     /** A gap longer than this is the test doing something else, not a slow tick. */
     private static final double MAX_MEASURED_DT_S = 0.1;
 
@@ -67,6 +79,16 @@ public final class SimHarness {
         DriverStationSim.notifyNewData();
     }
 
+    /** Put the simulated driver station into enabled autonomous. */
+    public static void enableAutonomous() {
+        initHal();
+        DriverStationSim.setDsAttached(true);
+        DriverStationSim.setAutonomous(true);
+        DriverStationSim.setTest(false);
+        DriverStationSim.setEnabled(true);
+        DriverStationSim.notifyNewData();
+    }
+
     public static void disable() {
         initHal();
         DriverStationSim.setEnabled(false);
@@ -83,6 +105,11 @@ public final class SimHarness {
         double dt = lastTickNs == 0 ? DT : (now - lastTickNs) / 1e9;
         lastDtSeconds = dt > MAX_MEASURED_DT_S || dt <= 0 ? DT : dt;
         lastTickNs = now;
+        maxDtSeconds = Math.max(maxDtSeconds, lastDtSeconds);
+        if (lastDtSeconds > 0.012) {
+            longSteps++;
+        }
+        stepCount++;
     }
 
     /**

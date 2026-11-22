@@ -54,13 +54,22 @@ public final class SuperstructurePlanner {
             wristTarget = Math.max(wristTarget, KeepOut.ALGAE_MIN_WRIST_DEG);
         }
 
-        // Carriage target: the span reachable with the measured wrist, pulled in from non-soft-limit ends.
-        KeepOut.Range span = KeepOut.carriageRangeAt(h, w);
-        double lo = span.min() > 0 ? span.min() + MARGIN_IN : span.min();
-        double hi = span.max() < ElevatorK.SOFT_MAX_IN ? span.max() - MARGIN_IN : span.max();
+        // Carriage target: legal for the measured wrist and for the wrist being commanded.
+        KeepOut.Range now = pulledInSpan(h, w);
+        KeepOut.Range next = pulledInSpan(h, wristTarget);
+        double lo = Math.max(now.min(), next.min());
+        double hi = Math.min(now.max(), next.max());
         double carriageTarget = lo > hi ? h : clamp(goal.carriageIn(), lo, hi);
 
         return new Targets(carriageTarget, wristTarget);
+    }
+
+    /** Carriage span reachable from height h with the wrist at wristDeg, pulled in from every non-soft-limit end. */
+    private static KeepOut.Range pulledInSpan(double h, double wristDeg) {
+        KeepOut.Range span = KeepOut.carriageRangeAt(h, wristDeg);
+        double lo = span.min() > 0 ? span.min() + MARGIN_IN : span.min();
+        double hi = span.max() < ElevatorK.SOFT_MAX_IN ? span.max() - MARGIN_IN : span.max();
+        return new KeepOut.Range(lo, hi);
     }
 
     private static KeepOut.Range marginedRange(int zoneIndex) {

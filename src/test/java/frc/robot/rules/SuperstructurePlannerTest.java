@@ -19,6 +19,8 @@ class SuperstructurePlannerTest {
             int ticks = 0;
             while (Math.abs(h - goal.carriageIn()) > 0.01 || Math.abs(w - goal.wristDeg()) > 0.01) {
                 var t = SuperstructurePlanner.next(h, w, goal, false);
+                assertTrue(KeepOut.isLegal(t.carriageIn(), t.wristDeg()),
+                        from + " to " + to + " planner output " + t + " from h=" + h + " w=" + w);
                 h += MathUtil.clamp(t.carriageIn() - h, -1.1, 1.1);
                 w += MathUtil.clamp(t.wristDeg() - w, -4, 4);
                 assertTrue(KeepOut.isLegal(h, w), from + " to " + to + " at h=" + h + " w=" + w);
@@ -70,6 +72,12 @@ class SuperstructurePlannerTest {
         assertEquals(5.5, t.carriageIn(), 1e-9);
     }
 
+    @Test void algaeWithStowGoalKeepsTheCarriageAboveTheStowZone() {
+        var t = SuperstructurePlanner.next(2, -90, new Targets(0, -90), true);
+        assertEquals(10, t.wristDeg(), 1e-9);
+        assertEquals(1.75, t.carriageIn(), 1e-9);
+    }
+
     @Test void algaeMovesStayLegalAndKeepTheFloor() {
         var carry = new Setpoints.Pose[] {Setpoints.Pose.ALGAE_LOW, Setpoints.Pose.ALGAE_HIGH,
             Setpoints.Pose.ALGAE_CARRY, Setpoints.Pose.NET, Setpoints.Pose.PROCESSOR};
@@ -80,6 +88,8 @@ class SuperstructurePlannerTest {
             var goal = new Targets(to.carriageIn, to.wristDeg);
             for (int tick = 0; tick < 3000; tick++) {
                 var t = SuperstructurePlanner.next(h, w, goal, true);
+                assertTrue(KeepOut.isLegal(t.carriageIn(), t.wristDeg()),
+                        from + " to " + to + " tick " + tick + " planner output " + t + " from h=" + h + " w=" + w);
                 h += MathUtil.clamp(t.carriageIn() - h, -1.1, 1.1);
                 w += MathUtil.clamp(t.wristDeg() - w, -4, 4);
                 String at = from + " to " + to + " tick " + tick + " h=" + h + " w=" + w;

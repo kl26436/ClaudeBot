@@ -34,27 +34,29 @@ public final class Reef {
     /** Segments passing closer than this to the reef centre are blocked. */
     private static final double KEEP_OUT_RADIUS_M = 1.69;
     /** Radius of the circle that route via points sit on. */
-    private static final double VIA_RADIUS_M = 1.75;
+    private static final double VIA_RADIUS_M = 2.0;
     private static final double VIA_FIRST_DEG = 30;
     private static final double VIA_STEP_DEG = 60;
 
     private static final int[] BLUE_TAGS = {18, 17, 22, 21, 20, 19};
     private static final int[] RED_TAGS = {7, 8, 9, 10, 11, 6};
 
-    private static final Translation2d BLUE_CENTRE = blueCentre();
+    private static final Translation2d BLUE_CENTRE = centreOf(BLUE_TAGS);
+    private static final Translation2d RED_CENTRE = centreOf(RED_TAGS);
 
-    private static Translation2d blueCentre() {
+    /** Mean of the six face tags: the layout's own reef centre, so corner bearings line up with the tags. */
+    private static Translation2d centreOf(int[] tags) {
         double x = 0, y = 0;
-        for (int id : BLUE_TAGS) {
+        for (int id : tags) {
             var t = Tags.pose(id).getTranslation();
             x += t.getX();
             y += t.getY();
         }
-        return new Translation2d(x / BLUE_TAGS.length, y / BLUE_TAGS.length);
+        return new Translation2d(x / tags.length, y / tags.length);
     }
 
     private static Translation2d centre(Alliance a) {
-        return a == Alliance.Blue ? BLUE_CENTRE : AllianceFlip.rotate(BLUE_CENTRE);
+        return a == Alliance.Blue ? BLUE_CENTRE : RED_CENTRE;
     }
 
     public static Pose2d tagPose(Alliance a, int face) {
@@ -95,65 +97,70 @@ public final class Reef {
     }
 
     /**
-     * True when the segment does not cut into the keep-out circle around the reef centre. A segment that
-     * starts inside the circle is clear if it only moves away from the centre (driving out of a scoring pose).
+     * False only when the segment passes by the reef: its closest point to the centre is strictly inside the
+     * segment and nearer than the keep-out radius. Leaving from, or arriving at, a pose inside the circle is allowed.
      */
     public static boolean pathClear(Alliance a, Translation2d from, Translation2d to) {
         var c = centre(a);
         var d = to.minus(from);
         double len2 = d.getX() * d.getX() + d.getY() * d.getY();
-        var rel = from.minus(c);
-        double t = len2 == 0 ? 0 : -(rel.getX() * d.getX() + rel.getY() * d.getY()) / len2;
-        t = Math.max(0, Math.min(1, t));
-        if (t == 0 && rel.getNorm() < KEEP_OUT_RADIUS_M) {
-            // closest approach is the start point, so the segment never gets nearer than where it begins
+        if (len2 == 0) {
+            return true;
+        }
+        var rel = c.minus(from);
+        double t = (rel.getX() * d.getX() + rel.getY() * d.getY()) / len2;
+        if (t <= 0 || t >= 1) {
             return true;
         }
         var closest = new Translation2d(from.getX() + t * d.getX(), from.getY() + t * d.getY());
         return closest.getDistance(c) >= KEEP_OUT_RADIUS_M;
     }
 
-    /**
-     * Via points that walk round the reef, then {@code to}. Corner via points sit at 30 + 60k degrees on the via
-     * circle; between two corners a mid-face point is added so every hop stays outside the keep-out circle.
-     */
+    /** Via points round the reef corners (30 + 60k degrees on the via circle), then {@code to}. */
     public static List<Pose2d> route(Alliance a, Translation2d from, Pose2d to) {
-        var out = new ArrayList<Pose2d>();
-        if (pathClear(a, from, to.getTranslation())) {
-            out.add(to);
-            return out;
+        var direct = List.of(to);
+        if (pathClear(a, from, to.getTranslation())
+                || nearestFace(a, from) == nearestFace(a, to.getTranslation())) {
+            return direct;
         }
         var c = centre(a);
-        double angFrom = Math.toDegrees(Math.atan2(from.getY() - c.getY(), from.getX() - c.getX()));
-        double angTo = Math.toDegrees(Math.atan2(to.getY() - c.getY(), to.getX() - c.getX()));
+        double angFrom = bearing(c, from);
+        double angTo = bearing(c, to.getTranslation());
         double ccw = Math.floorMod(Math.round((angTo - angFrom) * 1e6), 360_000_000L) / 1e6;
         boolean goCcw = ccw <= 180;
         double span = goCcw ? ccw : 360 - ccw;
         double dir = goCcw ? 1 : -1;
 
-        // corner angles (relative to the start angle) strictly inside the arc, in travel order
-        var corners = new ArrayList<Double>();
-        for (int k = -6; k <= 12; k++) {
+        var corners = new ArrayList<Double>(); // bearings strictly between from and to, in travel order
+        for (int k = 0; k < 6; k++) {
             double corner = VIA_FIRST_DEG + VIA_STEP_DEG * k;
             double travelled = Math.floorMod(Math.round(dir * (corner - angFrom) * 1e6), 360_000_000L) / 1e6;
-            if (travelled > 1e-6 && travelled < span - 1e-6) {
+            if (travelled <= span + 1e-6) {
                 corners.add(travelled);
             }
         }
-        corners.sort(Double::compare);
         if (corners.isEmpty()) {
-            // same sector but still blocked: step round via the nearer corner
-            corners.add(span / 2);
+            return direct;
         }
+        corners.sort(Double::compare);
         var heading = to.getRotation();
-        for (int i = 0; i < corners.size(); i++) {
-            if (i > 0 && corners.get(i) - corners.get(i - 1) > 45) {
-                out.add(via(c, angFrom + dir * (corners.get(i) + corners.get(i - 1)) / 2, heading));
-            }
-            out.add(via(c, angFrom + dir * corners.get(i), heading));
+        var out = new ArrayList<Pose2d>();
+        var first = via(c, angFrom + dir * corners.get(0), heading);
+        if (!pathClear(a, from, first.getTranslation())) {
+            out.add(via(c, angFrom, heading)); // back straight out
+        }
+        for (double t : corners) {
+            out.add(via(c, angFrom + dir * t, heading));
+        }
+        if (!pathClear(a, out.get(out.size() - 1).getTranslation(), to.getTranslation())) {
+            out.add(via(c, angTo, heading)); // come straight in
         }
         out.add(to);
         return out;
+    }
+
+    private static double bearing(Translation2d centre, Translation2d p) {
+        return Math.toDegrees(Math.atan2(p.getY() - centre.getY(), p.getX() - centre.getX()));
     }
 
     private static Pose2d via(Translation2d centre, double angDeg, Rotation2d heading) {

@@ -90,6 +90,9 @@ public final class RobotConstants {
 
         public static final double GEAR_RATIO = 3;
         public static final double WHEEL_DIAMETER_IN = 2;
+        public static final double STATOR_LIMIT_A = 40; // PLACEHOLDER(tuning)
+        /** Roller inertia at the output shaft, for the simulation. */
+        public static final double MOI_KGM2 = 0.0015; // PLACEHOLDER(drawing)
     }
 
     /** Algae claw. */
@@ -98,6 +101,8 @@ public final class RobotConstants {
 
         public static final double GEAR_RATIO = 2;
         public static final double STATOR_LIMIT_A = 30;
+        /** Inertia of one claw roller at its output shaft, for the simulation. */
+        public static final double MOI_KGM2 = 0.003; // PLACEHOLDER(drawing)
     }
 
     /** Intake camera. */

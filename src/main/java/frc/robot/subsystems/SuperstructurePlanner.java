@@ -16,8 +16,12 @@ public final class SuperstructurePlanner {
     public static final double MARGIN_IN = 0.5;
     public static final double MARGIN_DEG = 3.0;
 
-    /** How much worse than it reads the measured wrist is judged when releasing the carriage. */
-    public static final double MEASURED_MARGIN_DEG = 1.5;
+    /**
+     * How much worse than it reads the measured wrist is judged when releasing the carriage. Kept
+     * under {@code MARGIN_DEG - WRIST_TOL_DEG} so a wrist within tolerance of its target never
+     * holds the carriage.
+     */
+    public static final double MEASURED_MARGIN_DEG = 1.0;
 
     /**
      * @throws IllegalArgumentException if either measurement is NaN

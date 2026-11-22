@@ -66,7 +66,7 @@ class SuperstructurePlannerTest {
     }
 
     @Test void aWristSaggingInTheFunnelBandHoldsTheCarriage() {
-        var t = SuperstructurePlanner.next(10, -37.0, new Targets(0, -90), false);
+        var t = SuperstructurePlanner.next(10, -37.5, new Targets(0, -90), false);
         assertEquals(10, t.carriageIn(), 1e-9);
     }
 

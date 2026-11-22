@@ -59,6 +59,11 @@ public class ElevatorIOSim extends ElevatorIOTalonFX {
         homeSwitchBroken = broken;
     }
 
+    /** Where the carriage really is, whatever the sensors say. */
+    public double trueCarriageIn() {
+        return heightIn();
+    }
+
     private double heightIn() {
         return Units.metersToInches(physics.getPositionMeters());
     }

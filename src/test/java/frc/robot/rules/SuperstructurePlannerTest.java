@@ -53,6 +53,23 @@ class SuperstructurePlannerTest {
         assertEquals(-90, t.wristDeg(), 1e-9);
     }
 
+    @Test void aWristBarelyClearOfTheFunnelDoesNotReleaseTheCarriage() {
+        // -37.5 is legal above 6 in (limit -38), but with no margin a little lag puts it inside.
+        var t = SuperstructurePlanner.next(5.5, -37.5, new Targets(17.5, -35), false);
+        assertTrue(t.carriageIn() <= 5.5, "carriage released into the funnel band at " + t.carriageIn());
+        assertEquals(-35, t.wristDeg(), 1e-9);
+    }
+
+    @Test void aWristSettledInsideTheMarginReleasesTheCarriage() {
+        var t = SuperstructurePlanner.next(5.5, -36.0, new Targets(17.5, -35), false);
+        assertEquals(17.5, t.carriageIn(), 1e-9);
+    }
+
+    @Test void aWristSaggingInTheFunnelBandHoldsTheCarriage() {
+        var t = SuperstructurePlanner.next(10, -37.0, new Targets(0, -90), false);
+        assertEquals(10, t.carriageIn(), 1e-9);
+    }
+
     @Test void illegalStateHoldsTheCarriage() {
         var t = SuperstructurePlanner.next(10, -60, new Targets(30, -35), false);
         assertEquals(10, t.carriageIn(), 1e-9);

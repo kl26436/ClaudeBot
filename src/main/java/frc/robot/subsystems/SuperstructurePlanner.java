@@ -16,6 +16,9 @@ public final class SuperstructurePlanner {
     public static final double MARGIN_IN = 0.5;
     public static final double MARGIN_DEG = 3.0;
 
+    /** How much worse than it reads the measured wrist is judged when releasing the carriage. */
+    public static final double MEASURED_MARGIN_DEG = 1.5;
+
     /**
      * @throws IllegalArgumentException if either measurement is NaN
      */
@@ -54,8 +57,12 @@ public final class SuperstructurePlanner {
             wristTarget = Math.max(wristTarget, KeepOut.ALGAE_MIN_WRIST_DEG);
         }
 
-        // Carriage target: legal for the measured wrist and for the wrist being commanded.
-        KeepOut.Range now = pulledInSpan(h, w);
+        // Carriage target: legal for the measured wrist and for the wrist being commanded. The measured
+        // wrist is judged MEASURED_MARGIN_DEG lower than it reads (every restricted band limits the
+        // low side), so a wrist still settling toward its target does not let the carriage into a
+        // band it is barely clear of.
+        double wJudged = Math.max(WristK.MIN_DEG, w - MEASURED_MARGIN_DEG);
+        KeepOut.Range now = pulledInSpan(h, wJudged);
         KeepOut.Range next = pulledInSpan(h, wristTarget);
         double lo = Math.max(now.min(), next.min());
         double hi = Math.min(now.max(), next.max());

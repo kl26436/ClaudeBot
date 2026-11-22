@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
 import frc.robot.config.RobotConstants.DriveK;
+import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -43,6 +44,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private double targetMaxSpeedMps;
     private boolean teleopGains;
     private double speedScale = 1.0;
+    private DoubleSupplier speedScaleSource = null;
     private double lastPeriodicS = Double.NaN;
 
     public SwerveSubsystem(SwerveIO io) {
@@ -90,6 +92,11 @@ public class SwerveSubsystem extends SubsystemBase {
         speedScale = MathUtil.clamp(scale, 0, 1);
     }
 
+    /** Read the speed scale from {@code source} at the start of every loop, before driving. */
+    public void setSpeedScaleSource(DoubleSupplier source) {
+        speedScaleSource = source;
+    }
+
     public void resetPose(Pose2d pose) {
         io.resetPose(pose);
         inputs.pose = pose;
@@ -110,6 +117,10 @@ public class SwerveSubsystem extends SubsystemBase {
         Logger.processInputs("Drive", inputs);
         var fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(inputs.speeds, inputs.pose.getRotation());
         RobotState.get().update(inputs.pose, fieldSpeeds);
+
+        if (speedScaleSource != null) {
+            setSpeedScale(speedScaleSource.getAsDouble());
+        }
 
         double now = Timer.getFPGATimestamp();
         double dt = Double.isNaN(lastPeriodicS) ? 0 : now - lastPeriodicS;

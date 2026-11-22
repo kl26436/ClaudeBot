@@ -46,7 +46,8 @@ public class Superstructure extends SubsystemBase {
     private final CoralRollers coral;
     private final AlgaeClaw claw;
 
-    private Wanted wanted = Wanted.STOW;
+    // Read by the simulation thread in simulateJava.
+    private volatile Wanted wanted = Wanted.STOW;
     private boolean releaseRequested = false;
     /** Set once a requested release has started; it then runs until the request is cleared. */
     private boolean releasing = false;

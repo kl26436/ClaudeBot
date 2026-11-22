@@ -1,0 +1,258 @@
+package frc.robot.commands;
+
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.RobotContainer;
+import frc.robot.RobotState;
+import frc.robot.field.Reef;
+import frc.robot.field.Station;
+import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.Superstructure.Wanted;
+import frc.robot.subsystems.drive.SwerveSubsystem;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
+
+/** The scoring and pickup moves, shared by the driver's buttons and the autos. */
+public final class ScoreCommands {
+    private ScoreCommands() {}
+
+    /** The elevator starts rising once the robot is this close to its scoring pose. */
+    public static final double RAISE_DISTANCE_M = Units.inchesToMeters(48);
+
+    /** After a release request, a coral still seen after this long ends the score anyway. */
+    static final double RELEASE_TIMEOUT_S = 1.0;
+
+    /** A route's via point counts as passed this close to it. */
+    static final double VIA_PASSED_M = 0.25;
+
+    /** Speed cap for the algae pickup drive. */
+    static final double ALGAE_SPEED_MPS = 2.0; // PLACEHOLDER(tuning)
+
+    /**
+     * Drive {@link Reef#route} to the branch, raise to the level within {@link #RAISE_DISTANCE_M},
+     * and release once the drive and the mechanism are both on target. Finishes when the coral is
+     * gone or {@link #RELEASE_TIMEOUT_S} after the release. On end or interrupt: clear the release
+     * and the vision face, and stow. Ends at once if the alliance is unknown.
+     */
+    public static Command alignAndScore(
+            RobotContainer r,
+            Supplier<Reef.Branch> branch,
+            Supplier<Wanted> level,
+            double maxSpeedMps,
+            boolean teleopGains) {
+        return new RouteCommand(r, a -> Reef.scoringPose(a, branch.get()), maxSpeedMps, teleopGains) {
+            private Wanted chosen;
+            private double releasedAtS;
+
+            @Override
+            void start(Alliance a, Pose2d target) {
+                chosen = level.get();
+                releasedAtS = Double.NaN;
+                r.vision().setTargetFace(Optional.of(Reef.nearestFace(a, target.getTranslation())));
+            }
+
+            @Override
+            void step() {
+                var s = r.superstructure();
+                if (distanceToTargetM() <= RAISE_DISTANCE_M && s.wanted() != chosen) {
+                    s.setWanted(chosen);
+                }
+                if (Double.isNaN(releasedAtS) && onFinalLeg() && r.drive().atTarget() && s.atPose()) {
+                    s.requestRelease(true);
+                    releasedAtS = Timer.getFPGATimestamp();
+                }
+            }
+
+            @Override
+            boolean done() {
+                return !Double.isNaN(releasedAtS)
+                        && (!r.superstructure().hasCoral() || Timer.getFPGATimestamp() - releasedAtS >= RELEASE_TIMEOUT_S);
+            }
+
+            @Override
+            void finish() {
+                r.superstructure().requestRelease(false);
+                r.vision().setTargetFace(Optional.empty());
+                r.superstructure().setWanted(Wanted.STOW);
+            }
+        };
+    }
+
+    /** Drive to the station's pickup pose with the coral intake running; finish when a coral is seen. */
+    public static Command stationPickup(
+            RobotContainer r, Supplier<Station.Side> side, double maxSpeedMps, boolean teleopGains) {
+        return new RouteCommand(r, a -> Station.pickupPose(a, side.get()), maxSpeedMps, teleopGains) {
+            @Override
+            void start(Alliance a, Pose2d target) {
+                r.superstructure().setWanted(Wanted.STATION_INTAKE);
+            }
+
+            @Override
+            boolean done() {
+                return r.superstructure().hasCoral();
+            }
+
+            @Override
+            void finish() {
+                r.superstructure().setWanted(Wanted.STOW);
+            }
+        };
+    }
+
+    /**
+     * Drive to a face's algae pose with the claw at that face's algae height; finish when the algae is
+     * held. Stowing with an algae on board carries it.
+     */
+    public static Command algaeFromReef(RobotContainer r, IntSupplier face) {
+        return new RouteCommand(r, a -> Reef.algaePose(a, face.getAsInt()), ALGAE_SPEED_MPS, false) {
+            private Wanted height;
+
+            @Override
+            void start(Alliance a, Pose2d target) {
+                int f = Reef.nearestFace(a, target.getTranslation());
+                height = Reef.algaeIsHigh(f) ? Wanted.ALGAE_HIGH : Wanted.ALGAE_LOW;
+                r.vision().setTargetFace(Optional.of(f));
+            }
+
+            @Override
+            void step() {
+                if (distanceToTargetM() <= RAISE_DISTANCE_M && r.superstructure().wanted() != height) {
+                    r.superstructure().setWanted(height);
+                }
+            }
+
+            @Override
+            boolean done() {
+                return r.superstructure().hasAlgae();
+            }
+
+            @Override
+            void finish() {
+                r.vision().setTargetFace(Optional.empty());
+                r.superstructure().setWanted(Wanted.STOW);
+            }
+        };
+    }
+
+    /** Raise to the net and release the algae; the driver (or the auto) has already driven there. */
+    public static Command netScore(RobotContainer r) {
+        return releaseAlgaeAt(r, Wanted.NET);
+    }
+
+    /** Provisional: the processor pose and release, as for the net. */
+    public static Command processorScore(RobotContainer r) {
+        return releaseAlgaeAt(r, Wanted.PROCESSOR);
+    }
+
+    private static Command releaseAlgaeAt(RobotContainer r, Wanted pose) {
+        Superstructure s = r.superstructure();
+        double[] releasedAt = {Double.NaN};
+        // Requires the superstructure, so Back (stow and cancel) interrupts it.
+        return Commands.sequence(
+                        Commands.runOnce(() -> s.setWanted(pose), s),
+                        Commands.waitUntil(s::atPose),
+                        Commands.runOnce(() -> {
+                            s.requestRelease(true);
+                            releasedAt[0] = Timer.getFPGATimestamp();
+                        }),
+                        Commands.waitUntil(() -> !s.hasAlgae()
+                                || Timer.getFPGATimestamp() - releasedAt[0] >= RELEASE_TIMEOUT_S))
+                .finallyDo(() -> {
+                    s.requestRelease(false);
+                    s.setWanted(Wanted.STOW);
+                })
+                .withName(pose + " release");
+    }
+
+    /**
+     * Drives a route planned once at the start (around the reef when the straight line would cross
+     * it) and lets the subclass run the mechanism along the way. Requires the drive and the
+     * superstructure. Ends at once, doing nothing, when the alliance is unknown.
+     */
+    private abstract static class RouteCommand extends Command {
+        private final RobotContainer r;
+        private final Function<Alliance, Pose2d> targetFor;
+        private final double maxSpeedMps;
+        private final boolean teleopGains;
+        private List<Pose2d> route = List.of();
+        private int leg;
+        private Pose2d target;
+        private boolean noAlliance;
+
+        RouteCommand(RobotContainer r, Function<Alliance, Pose2d> targetFor, double maxSpeedMps, boolean teleopGains) {
+            this.r = r;
+            this.targetFor = targetFor;
+            this.maxSpeedMps = maxSpeedMps;
+            this.teleopGains = teleopGains;
+            addRequirements(r.drive(), r.superstructure());
+        }
+
+        void start(Alliance a, Pose2d target) {}
+
+        void step() {}
+
+        abstract boolean done();
+
+        abstract void finish();
+
+        final double distanceToTargetM() {
+            return r.drive().pose().getTranslation().getDistance(target.getTranslation());
+        }
+
+        final boolean onFinalLeg() {
+            return leg == route.size() - 1;
+        }
+
+        @Override
+        public final void initialize() {
+            Optional<Alliance> alliance = RobotState.get().alliance();
+            noAlliance = alliance.isEmpty();
+            if (noAlliance) {
+                return;
+            }
+            target = targetFor.apply(alliance.get());
+            route = Reef.route(alliance.get(), r.drive().pose().getTranslation(), target);
+            leg = 0;
+            start(alliance.get(), target);
+            driveLeg();
+        }
+
+        private void driveLeg() {
+            r.drive().driveToPoint(route.get(leg), maxSpeedMps, teleopGains);
+        }
+
+        @Override
+        public final void execute() {
+            if (noAlliance) {
+                return;
+            }
+            SwerveSubsystem drive = r.drive();
+            if (!onFinalLeg()
+                    && drive.pose().getTranslation().getDistance(route.get(leg).getTranslation()) <= VIA_PASSED_M) {
+                leg++;
+                driveLeg();
+            }
+            step();
+        }
+
+        @Override
+        public final boolean isFinished() {
+            return noAlliance || done();
+        }
+
+        @Override
+        public final void end(boolean interrupted) {
+            r.drive().stopDriving();
+            if (!noAlliance) {
+                finish();
+            }
+        }
+    }
+}

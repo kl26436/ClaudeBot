@@ -42,7 +42,7 @@ SKIP_GROUPS = ("Elevator_Rev_G:_Reference", "Wrist_reference")
 COLOURS = [
     (r"polycarbonate", (0.75, 0.85, 0.92, 0.35), 0.2),
     (r"padding|noodle", (0.10, 0.22, 0.60, 1), 0.9),
-    (r"plywood|board", (0.72, 0.58, 0.40, 1), 0.8),
+    (r"plywood", (0.72, 0.58, 0.40, 1), 0.8),
     (r"flex_wheel|claw_roller__|roller_\(|sleeve.*rubber|neoprene", (0.16, 0.45, 0.24, 1), 0.9),
     (r"Kraken|motor", (0.10, 0.10, 0.11, 1), 0.5),
     (r"Limelight", (0.15, 0.50, 0.20, 1), 0.6),

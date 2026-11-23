@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class KeepOutTest {
     /** Drawing R-001, rev3: the lowest wrist angle allowed, just inside both ends of each band. */
     @ParameterizedTest
-    @CsvSource({"1.76,-75", "6.99,-75", "7,-60", "8.99,-60", "9,-45", "14.99,-45", "15,-40", "22.99,-40", "23,-90", "65.25,-90"})
+    @CsvSource({"2.01,-75", "6.99,-75", "7,-60", "8.99,-60", "9,-45", "14.99,-45", "15,-40", "22.99,-40", "23,-90", "65.25,-90"})
     void lowestAngleMatchesTheDrawing(double h, double lowest) {
         assertTrue(KeepOut.isLegal(h, lowest));
         assertTrue(KeepOut.isLegal(h, 75));
@@ -57,8 +57,8 @@ class KeepOutTest {
     @Test void steepWristAboveFunnelStaysAbove23() { assertEquals(23, KeepOut.carriageRangeAt(40, -60).min(), 1e-9); }
 
     @Test void stowToleranceAppliesOnlyInStowZone() {
-        assertTrue(KeepOut.isLegal(0.5, -88.5));
-        assertFalse(KeepOut.isLegal(0.5, -87));
+        assertTrue(KeepOut.isLegal(0.5, -87.5));
+        assertFalse(KeepOut.isLegal(0.5, -86.5));
     }
 
     @Test void outOfTravelIsIllegal() {

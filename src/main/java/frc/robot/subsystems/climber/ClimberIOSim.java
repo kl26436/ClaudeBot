@@ -2,6 +2,7 @@ package frc.robot.subsystems.climber;
 
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import frc.robot.config.Ports;
 import frc.robot.config.RobotConstants.ClimberK;
@@ -100,13 +101,14 @@ public class ClimberIOSim extends ClimberIOTalonFX {
 
     private void movePawls(double dt) {
         boolean loaded = ropeDeg - toothDeg < PAWL_FREE_DEG;
-        if (liftCommanded == pawlsUp || (liftCommanded && loaded)) {
+        boolean liftPowered = liftCommanded && DriverStation.isEnabled(); // no PWM while disabled: the springs win
+        if (liftPowered == pawlsUp || (liftPowered && loaded)) {
             pawlTimerS = 0; // nothing to do, or the servo pulls on a loaded pawl and nothing happens
             return;
         }
         pawlTimerS += dt;
         if (pawlTimerS >= PAWL_MOVE_S) {
-            pawlsUp = liftCommanded;
+            pawlsUp = liftPowered;
             pawlTimerS = 0;
         }
     }

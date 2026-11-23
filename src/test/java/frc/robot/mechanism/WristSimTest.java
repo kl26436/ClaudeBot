@@ -275,6 +275,40 @@ class WristSimTest {
     }
 
     @Test
+    void anEncoderThatWalksOffIsNotFollowedForEver() {
+        var io = new SeedableIO();
+        var w = new Wrist(io); // registered with the scheduler, so the harness runs its periodic
+        try {
+            SimHarness.run(0.1);
+            for (int i = 0; i < 4 && w.isTrusted(); i++) {
+                io.absoluteDeg += 3; // slips 3 degrees the same way each time
+                SimHarness.run(0.5);
+            }
+            assertFalse(w.isTrusted(), "followed the encoder to " + w.wristDeg());
+            assertTrue(io.absoluteDeg <= -90 + 9);
+        } finally {
+            w.close();
+        }
+    }
+
+    @Test
+    void slackTakenUpOneWayAndBackStaysTrusted() {
+        var io = new SeedableIO();
+        var w = new Wrist(io);
+        try {
+            SimHarness.run(0.1);
+            for (int i = 0; i < 5; i++) {
+                io.absoluteDeg = i % 2 == 0 ? -88 : -90;
+                SimHarness.run(0.5);
+                assertTrue(w.isTrusted());
+                assertEquals(io.absoluteDeg, w.wristDeg(), 0.6);
+            }
+        } finally {
+            w.close();
+        }
+    }
+
+    @Test
     void aFastMoveStaysTrusted() {
         // The two readings are a few milliseconds apart; at full speed that must not look like a fault.
         wrist.setGoalDeg(75);

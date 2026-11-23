@@ -93,6 +93,29 @@ class SuperstructurePlannerTest {
     }
 
     /**
+     * A real axis settles a little off its target (friction, an imperfect gravity term), and no move may
+     * wait for ever on the last of it: every move must still finish with each axis anywhere inside its
+     * own tolerance.
+     */
+    @Test void movesFinishWithEachAxisSettlingOffItsTarget() {
+        for (var from : Setpoints.Pose.values()) for (var to : Setpoints.Pose.values()) {
+            for (double eh : new double[] {-0.45, 0, 0.45}) for (double ew : new double[] {-1.4, 0, 1.4}) {
+                double h = from.carriageIn, w = from.wristDeg;
+                var goal = new Targets(to.carriageIn, to.wristDeg);
+                int ticks = 0;
+                while (Math.abs(h - goal.carriageIn()) > Setpoints.CARRIAGE_TOL_IN || Math.abs(w - goal.wristDeg()) > Setpoints.WRIST_TOL_DEG) {
+                    var t = SuperstructurePlanner.next(h, 0, w, 0, goal, false);
+                    h += MathUtil.clamp(Math.max(0, t.carriageIn() + eh) - h, -1.1, 1.1);
+                    w += MathUtil.clamp(t.wristDeg() + ew - w, -4, 4);
+                    String at = from + " to " + to + " settling " + eh + " in, " + ew + " deg off, at h=" + h + " w=" + w;
+                    assertTrue(KeepOut.isLegal(MathUtil.clamp(h, 0, 65.25), MathUtil.clamp(w, -90, 75)), at);
+                    assertTrue(++ticks < 2000, "stuck: " + at);
+                }
+            }
+        }
+    }
+
+    /**
      * One axis following its target the way Motion Magic does: time-optimal under a cruise speed and
      * an acceleration limit. Returns {position, velocity} after dt.
      */
@@ -114,7 +137,19 @@ class SuperstructurePlannerTest {
      * one loop late, each axis limited by its Motion Magic cruise and acceleration.
      */
     @Test void interruptedMovesStayLegal() {
-        var poses = Setpoints.Pose.values();
+        interruptedMoves(Setpoints.Pose.values(), false);
+    }
+
+    @Test void interruptedMovesWithAnAlgaeStayLegal() {
+        interruptedMoves(
+                new Setpoints.Pose[] {
+                    Setpoints.Pose.ALGAE_LOW, Setpoints.Pose.ALGAE_HIGH, Setpoints.Pose.ALGAE_CARRY, Setpoints.Pose.NET,
+                    Setpoints.Pose.PROCESSOR
+                },
+                true);
+    }
+
+    private static void interruptedMoves(Setpoints.Pose[] poses, boolean hasAlgae) {
         double cruiseIn = frc.robot.config.RobotConstants.ElevatorK.CRUISE_IN_PER_S;
         double accelIn = frc.robot.config.RobotConstants.ElevatorK.ACCEL_IN_PER_S2;
         double cruiseDeg = frc.robot.config.RobotConstants.WristK.CRUISE_DEG_PER_S;
@@ -132,13 +167,13 @@ class SuperstructurePlannerTest {
                 for (int tick = 0; tick < 250; tick++) {
                     if (tick == cut) goal = new Targets(c.carriageIn, c.wristDeg);
                     var sent = pending;
-                    pending = SuperstructurePlanner.next(h, vh, w, vw, goal, false);
+                    pending = SuperstructurePlanner.next(h, vh, w, vw, goal, hasAlgae);
                     for (int k = 0; k < 10; k++) {
                         double[] hv = follow(h, vh, sent.carriageIn(), cruiseIn, accelIn, 0.002);
                         double[] wv = follow(w, vw, sent.wristDeg(), cruiseDeg, accelDeg, 0.002);
                         h = hv[0]; vh = hv[1]; w = wv[0]; vw = wv[1];
                         double hc = MathUtil.clamp(h, 0, 65.25), wc = MathUtil.clamp(w, -90, 75);
-                        if (!KeepOut.isLegal(hc, wc)) {
+                        if (!KeepOut.isLegal(hc, wc) || (hasAlgae && w < KeepOut.ALGAE_MIN_WRIST_DEG - 0.5)) {
                             worstCount++;
                             if (worst.isEmpty()) {
                                 worst = a + " to " + b + ", then " + c + " at " + cut * 20 + " ms: h=" + h + " w=" + w;

@@ -117,6 +117,11 @@ public class ClimberIOTalonFX implements ClimberIO, AutoCloseable {
     }
 
     @Override
+    public void zeroStowed() {
+        left.setPosition(0);
+    }
+
+    @Override
     public void setPawlsLifted(boolean lifted) {
         pawls.setPulseTimeMicroseconds(lifted ? PAWL_LIFTED_US : PAWL_DOWN_US);
     }

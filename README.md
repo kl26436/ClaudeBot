@@ -1,8 +1,9 @@
 # Robot A
 
 Robot code for Team 4206's Robot A: swerve drive, a three-stage elevator, a wrist with coral rollers
-and an algae claw, and one Limelight 4. It runs the real robot and a physics simulation of it from
+and an algae claw, a winch climber, and one Limelight 4. It runs the real robot and a physics simulation of it from
 the same code. The design is in [docs/superpowers/specs](docs/superpowers/specs/2026-11-21-robot-a-code-design.md),
+the final CAD's numbers and the climb in [docs/cad](docs/cad/ROBOT_A_SOFTWARE_HANDOFF.md),
 the CAN and power map in [docs/wiring.md](docs/wiring.md), and every unconfirmed value in
 [docs/open-numbers.md](docs/open-numbers.md).
 
@@ -31,8 +32,13 @@ If Gradle reports that `JAVA_HOME` is not set, point it at WPILib's JDK, for exa
 Plug in an Xbox controller and enable teleop from the simulation window. Controls are in the
 design's Driver controls table: left stick drives field-relative, right stick turns, Y/X/B/A pick
 L4 to L1, the triggers align and score on the nearest reef face (right or left branch), right bumper
-picks up at the nearest station, left bumper takes reef algae, D-pad up scores the net, Back stows
-and cancels, Start resets the heading.
+picks up at the nearest station, left bumper takes reef algae, D-pad up scores the net, D-pad down the
+processor, Back stows and cancels, Start resets the heading.
+
+Hold D-pad right to climb. The first hold moves the mechanism out of the way, opens the funnel and lets
+the fork down to level; let go, back onto the cage, and hold it again to wind in. Letting go pauses at any
+point. Opening the funnel cannot be undone in a match: from then on the mechanism stays put until robot
+code restarts. On a field the climb is locked until the last 30 s.
 
 The simulation steps every mechanism against a physics model and the field with maple-sim. A coral
 arrives 0.7 s after the robot settles at a station with the intake running, and each released piece
@@ -46,15 +52,20 @@ Connect AdvantageScope 2026 to the simulator (or open a log from `logs/`). Usefu
 | --- | --- |
 | `Sim/TruePose` | Where the robot really is |
 | `Drive` inputs (pose, module states) | What odometry thinks |
-| `Mechanism/Components` | Stage A, stage B, carriage and wrist poses, for the robot model |
+| `Mechanism/Components` | Stage A, stage B, carriage, wrist, climber fork and funnel tray, for the robot model |
+| `Climber/*` | Step of the climb, fork angle, pawls |
 | `Sim/Coral`, `Sim/Algae` | Game pieces on the robot and the field |
 | `Superstructure/*` | Wanted state, targets, at-pose |
 | `Auto/Selected`, `Auto/PoseSet` | The chosen auto and whether its start pose was set |
 
-The CAD robot model and a saved layout will live in `ascope/`. That step (plan Task 18) is waiting
-for the final CAD STEP files; until then use AdvantageScope's default robot with
-`Mechanism/Components` as its components. Once `ascope/` exists, choose Use Custom Assets Folder in
-AdvantageScope and pick it.
+The CAD robot model and a layout are in `ascope/`. In AdvantageScope, choose Use Custom Assets
+Folder from the menu and pick `ascope/`; then Import Layout and pick `ascope/layout.json`. Set the live source to
+NetworkTables 4 (AdvantageKit) so the keys match the layout's. The layout opens the 3D field (true pose with
+the CAD model, odometry as a green ghost), the swerve states, and target against measured for the carriage,
+wrist and climber.
+
+`tools/step_to_glb.py` makes the model from the CAD package's `robotA_assembly_complete.step`, one file for
+each group that moves together.
 
 ## Tests
 
@@ -69,6 +80,18 @@ up, and each test class runs in its own JVM. Run one class with
 
 On Windows, VS Code's Java extension can hold files under `build/` open and make Gradle fail with
 "Unable to delete directory". Close the editor or run Gradle with a different build directory.
+
+## Set up the robot
+
+- **CAN:** IDs and ports in [docs/wiring.md](docs/wiring.md). Name the CANivore `canivore`.
+- **Limelight 4:** name `limelight`, an AprilTag pipeline, 1280 x 800, with corner output on.
+- **Wrist encoder:** with the wrist held level, read `Wrist/AbsoluteDeg` and set `ENCODER_OFFSET_ROT` (and
+  `ENCODER_SIGN` if the reading falls as the tip rises) in `WristIOTalonFX`.
+- **Servos:** fit each horn so 1500 us is the middle of its swing, then find the pulse at each end
+  (`ClimberIOTalonFX`). Do the pawls with the rope off.
+- **Start every match with the fork stowed:** nothing measures it, and its angle counts from there.
+- **Unstow band:** before trusting it, move the wrist through its range by hand with the carriage at 0.75,
+  1.25 and 1.75 in.
 
 ## Add an auto
 

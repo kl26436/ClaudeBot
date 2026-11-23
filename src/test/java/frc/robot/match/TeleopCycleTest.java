@@ -152,29 +152,37 @@ class TeleopCycleTest {
         }
         assertTrue(r.sim().trueCarriageIn() >= 45, "precondition: the carriage is high");
         score.cancel();
-        // Drive straight back from the reef at full stick, as a driver would.
-        var away = r.drive().run(() -> r.drive().setTeleopInput(-1, 0, 0));
+        // Branch H faces the middle of the field, so +x is straight back from the reef.
+        var away = r.drive().run(() -> r.drive().setTeleopInput(1, 0, 0));
         schedule(away);
-        // Acceleration over a 60 ms window: one-tick differences of the odometry speed double up when
-        // a sample repeats and the next catches up.
-        java.util.ArrayDeque<Double> speeds = new java.util.ArrayDeque<>();
+        // The true velocity over 60 ms of simulated time: odometry samples repeat and catch up, and
+        // their differences show spikes the robot never feels.
+        java.util.ArrayDeque<double[]> samples = new java.util.ArrayDeque<>();
+        double worst = 0;
+        String at = "";
         for (int i = 0; i < 60; i++) {
             SimHarness.run(SimHarness.DT);
             assertTrue(mechanismLegal(), "keep-out broken at h=" + r.sim().trueCarriageIn() + " w=" + r.sim().trueWristDeg());
-            double speed = Math.hypot(
-                    frc.robot.RobotState.get().speeds().vxMetersPerSecond, frc.robot.RobotState.get().speeds().vyMetersPerSecond);
+            var v = r.sim().trueVelocity();
             double cap = r.superstructure().driveSpeedScale() * frc.robot.config.RobotConstants.DriveK.MAX_SPEED_MPS;
-            assertTrue(speed <= cap + 0.3, "speed " + speed + " over the cap " + cap + " at h=" + r.sim().trueCarriageIn());
-            speeds.addLast(speed);
-            if (speeds.size() > 4) {
-                speeds.removeFirst();
+            assertTrue(v.getNorm() <= cap + 0.3, "speed " + v.getNorm() + " over the cap " + cap + " at h=" + r.sim().trueCarriageIn());
+            samples.addLast(new double[] {r.sim().timeS(), v.getX(), v.getY()});
+            if (samples.size() > 4) {
+                samples.removeFirst();
             }
-            if (speeds.size() == 4) {
-                double accel = Math.abs(speeds.peekLast() - speeds.peekFirst()) / (3 * SimHarness.DT);
-                double limit = r.superstructure().driveAccelLimitMps2();
-                assertTrue(accel <= limit * 1.3 + 0.5, "accel " + accel + " over the limit " + limit);
+            if (samples.size() == 4) {
+                double[] p = samples.peekFirst();
+                double[] q = samples.peekLast();
+                double accel = Math.hypot(q[1] - p[1], q[2] - p[2]) / (q[0] - p[0]);
+                double over = accel / r.superstructure().driveAccelLimitMps2();
+                if (over > worst) {
+                    worst = over;
+                    at = "accel " + accel + " against " + r.superstructure().driveAccelLimitMps2() + " at h=" + r.sim().trueCarriageIn();
+                }
             }
         }
+        assertTrue(worst <= 1.3, at);
+        assertTrue(r.sim().trueVelocity().getNorm() > 1.5, "it should really have driven off");
         away.cancel();
         assertEquals(Wanted.STOW, r.superstructure().wanted());
     }

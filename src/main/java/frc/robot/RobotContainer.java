@@ -4,6 +4,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -26,6 +27,7 @@ import frc.robot.subsystems.climber.Climber;
 import frc.robot.subsystems.climber.ClimberIO;
 import frc.robot.subsystems.climber.ClimberIOSim;
 import frc.robot.subsystems.climber.ClimberIOTalonFX;
+import frc.robot.subsystems.climber.CommitMemory;
 import frc.robot.subsystems.coral.CoralRollers;
 import frc.robot.subsystems.coral.CoralRollersIO;
 import frc.robot.subsystems.coral.CoralRollersIOSim;
@@ -135,7 +137,13 @@ public class RobotContainer {
         coral = new CoralRollers(coralIo);
         claw = new AlgaeClaw(clawIo);
         superstructure = new Superstructure(elevator, wrist, coral, claw);
-        climber = new Climber(climberIo, superstructure::atClimbPose, superstructure::clearOfClimber);
+        climber = new Climber(
+                climberIo,
+                new Climber.Mechanism(
+                        superstructure::atClimbPose, superstructure::clearOfClimber, superstructure::inClimbersWay),
+                RobotConstants.currentMode() == RobotConstants.Mode.REAL
+                        ? CommitMemory.onDisk()
+                        : CommitMemory.inMemory(""));
         superstructure.setClimbLock(climber::committed);
         vision = new Vision(visionIo, drive);
         sim = driveSim == null
@@ -187,7 +195,9 @@ public class RobotContainer {
                 this, () -> Reef.nearestFace(allianceOrBlue(), drive.pose().getTranslation())));
         controller.povUp().and(playing).onTrue(ScoreCommands.netScore(this));
         controller.povDown().and(playing).onTrue(ScoreCommands.processorScore(this));
-        controller.povRight().whileTrue(ClimbCommands.climb(this));
+        controller.povRight().and(() -> ClimbCommands.available(this)).whileTrue(ClimbCommands.climb(this));
+        controller.povLeft().and(climber::committed).whileTrue(ClimbCommands.lowerFork(this));
+        SmartDashboard.putData("Climber/Pit reset", ClimbCommands.pitReset(this));
         controller.back().onTrue(Commands.runOnce(() -> superstructure.setWanted(Wanted.STOW), superstructure, drive));
         controller.start().onTrue(Commands.runOnce(this::resetHeading));
     }

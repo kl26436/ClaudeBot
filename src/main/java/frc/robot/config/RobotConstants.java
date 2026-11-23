@@ -150,6 +150,17 @@ public final class RobotConstants {
         public static final double TENSION_DEG = 3; // PLACEHOLDER(tuning)
 
         public static final double TENSION_MAX_DEG = 95;
+        /** Winding in the empty fork takes a few amps; this much for this long is the stop bolts or the robot. */
+        public static final double TENSION_LOAD_A = 20; // PLACEHOLDER(tuning)
+
+        public static final double TENSION_LOAD_S = 0.1;
+        /** Held still under that current for this long, the rope is taken to be unloaded and the pawls may lift. */
+        public static final double TENSION_QUIET_S = 0.3;
+
+        /** The button is held at least this long before the funnel opens, and before a wind-in starts. */
+        public static final double COMMIT_HOLD_S = 0.7;
+
+        public static final double CLIMB_HOLD_S = 0.3;
         public static final double TENSION_TOL_DEG = 1.0;
         public static final double STATOR_LIMIT_A = 60;
         public static final double CRUISE_DEG_PER_S = 60; // PLACEHOLDER(tuning)

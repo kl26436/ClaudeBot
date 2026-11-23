@@ -27,6 +27,9 @@ public interface ClimberIO {
 
     default void stop() {}
 
+    /** Declare the fork to be stowed where it is. */
+    default void zeroStowed() {}
+
     /** Hold the pawls off the ratchet wheels, or let their springs put them back. */
     default void setPawlsLifted(boolean lifted) {}
 

@@ -110,7 +110,8 @@ public final class SuperstructurePlanner {
         double hStop = clamp(stoppingPoint(h, vSoon, ElevatorK.ACCEL_IN_PER_S2), 0, ElevatorK.SOFT_MAX_IN);
         boolean stowed = w <= WristK.MIN_DEG + KeepOut.STOW_TOL_DEG;
         double slideLow = Math.max(0, Math.min(h, hStop) - EDGE_IN);
-        if (!stowed) {
+        if (!stowed || Math.min(h, hStop) >= KeepOut.UNSTOW_MIN_IN) {
+            // A carriage that settles low in the unstow band is still in it.
             slideLow = Math.max(slideLow, Math.min(h, KeepOut.UNSTOW_MIN_IN));
         }
         double slideHigh = Math.min(ElevatorK.SOFT_MAX_IN, Math.max(h, hStop) + EDGE_IN);
@@ -150,6 +151,9 @@ public final class SuperstructurePlanner {
         KeepOut.Range span = KeepOut.carriageRangeAt(h, wristDeg);
         double lo = span.min() > 0 ? span.min() + MARGIN_IN : span.min();
         double hi = span.max() < ElevatorK.SOFT_MAX_IN ? span.max() - MARGIN_IN : span.max();
+        if (span.max() == KeepOut.UNSTOW_MAX_IN) {
+            hi = KeepOut.UNSTOW_IN; // a stowed wrist goes no higher than it has to
+        }
         return new KeepOut.Range(lo, hi);
     }
 

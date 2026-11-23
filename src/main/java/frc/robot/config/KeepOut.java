@@ -14,7 +14,7 @@ public final class KeepOut {
 
     public record Range(double min, double max) {}
 
-    public static final double STOW_TOL_DEG = 2.0;
+    public static final double STOW_TOL_DEG = 3.0;
     public static final double ALGAE_MIN_WRIST_DEG = 10.0;
 
     private static final double STOW_DEG = -90.0;
@@ -30,7 +30,7 @@ public final class KeepOut {
     public static final double UNSTOW_IN = 1.25;
 
     public static final double UNSTOW_MIN_IN = 0.75; // PLACEHOLDER(robot-check)
-    public static final double UNSTOW_MAX_IN = 1.75; // PLACEHOLDER(robot-check)
+    public static final double UNSTOW_MAX_IN = 2.0; // PLACEHOLDER(robot-check)
 
     /** Contiguous, ordered zones (drawing R-001, rev3). The last zone includes its top. */
     public static final List<Zone> ZONES = List.of(

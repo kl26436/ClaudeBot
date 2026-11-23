@@ -141,6 +141,17 @@ public class SimulatedRobot extends SubsystemBase {
         }
     }
 
+    /** Simulated seconds since the robot was built. */
+    public synchronized double timeS() {
+        return clockS;
+    }
+
+    /** How fast the robot is really moving over the field, as a field-frame vector in m/s. */
+    public synchronized Translation2d trueVelocity() {
+        var v = drive.physics().getDriveTrainSimulatedChassisSpeedsFieldRelative();
+        return new Translation2d(v.vxMetersPerSecond, v.vyMetersPerSecond);
+    }
+
     /** Simulated seconds since the present mode began. */
     public synchronized double modeTimeS() {
         return clockS - modeStartS;

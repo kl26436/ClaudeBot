@@ -166,6 +166,11 @@ public class Superstructure extends SubsystemBase {
                 && Math.abs(wrist.wristDeg() - Pose.CLIMB.wristDeg) <= CLIMB_CLEAR_DEG;
     }
 
+    /** True when trusted sensors put the mechanism in the climber fork's way. */
+    public boolean inClimbersWay() {
+        return elevator.isHomed() && wristUsable() && !clearOfClimber();
+    }
+
     /** True once a requested release has actually started at the pose (the rollers are pushing). */
     public boolean isReleasing() {
         return releasing;
@@ -292,7 +297,7 @@ public class Superstructure extends SubsystemBase {
                 wrist.wristDeg(),
                 wrist.velocityDegPerS(),
                 new Targets(p.carriageIn, p.wristDeg),
-                claw.mayHaveAlgae() && !climbDropDone());
+                claw.mayHaveAlgae() && !climbDropDone() && !climbLock.getAsBoolean());
         elevator.setGoalIn(target.carriageIn());
         wrist.setGoalDeg(target.wristDeg());
     }
@@ -303,7 +308,7 @@ public class Superstructure extends SubsystemBase {
 
     /** The climb pose is below the angle an algae can be carried at, so it has to go first. */
     private boolean droppingAlgaeToClimb() {
-        if (wanted != Wanted.CLIMB || !claw.mayHaveAlgae() || climbDropDone()) {
+        if (wanted != Wanted.CLIMB || climbLock.getAsBoolean() || !claw.mayHaveAlgae() || climbDropDone()) {
             return false;
         }
         if (!elevator.isHomed() || elevator.carriageIn() > CLIMB_DROP_MAX_IN) {

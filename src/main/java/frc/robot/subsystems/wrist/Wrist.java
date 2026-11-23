@@ -38,6 +38,12 @@ public class Wrist extends SubsystemBase {
     /** A gap above this, on a wrist that has been still for {@link #STILL_S}, is taken out by seeding again. */
     private static final double RESEED_DEG = 0.5; // PLACEHOLDER(tuning)
 
+    /**
+     * The corrections, added up with their signs, may not pass this: chain slack takes up one way and back,
+     * while an encoder slipping on its shaft walks off in one direction.
+     */
+    private static final double MAX_TOTAL_RESEED_DEG = 5;
+
     private static final double STILL_DEG_PER_S = 2;
     private static final double STILL_S = 0.25;
 
@@ -53,6 +59,7 @@ public class Wrist extends SubsystemBase {
     private boolean seeding = true;
 
     private boolean seedSent = false;
+    private double totalReseedDeg = 0;
 
     public Wrist(WristIO io) {
         this.io = io;
@@ -107,11 +114,16 @@ public class Wrist extends SubsystemBase {
         boolean slack = stillOffset.calculate(
                 agrees && gap > RESEED_DEG && Math.abs(inputs.velocityDegPerS) < STILL_DEG_PER_S);
         boolean disagrees = disagreement.calculate(!agrees);
+        if (slack && !seeding) {
+            totalReseedDeg += inputs.absoluteDeg - inputs.wristDeg;
+            stillOffset.calculate(false); // the next correction needs its own still spell
+        }
+        boolean walkedOff = Math.abs(totalReseedDeg) > MAX_TOTAL_RESEED_DEG;
         if (inputs.connected && encoderOk && (seeding || slack)) {
             io.seed(inputs.absoluteDeg);
             seedSent = true;
         }
-        trusted = encoderOk && !seeding && !disagrees;
+        trusted = encoderOk && !seeding && !disagrees && !walkedOff;
         encoderAlert.set(!trusted);
 
         if (trusted && !Double.isNaN(goalDeg)) {

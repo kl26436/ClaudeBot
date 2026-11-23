@@ -6,7 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import frc.robot.config.Ports;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
@@ -20,15 +23,27 @@ class PortsTest {
             "CANcoder", "CANcoder",
             "CANrange", "CANrange");
 
+    private static List<String> csv() throws IOException {
+        return Files.readAllLines(Path.of("docs", "cad", "robotA_can_map.csv"), StandardCharsets.UTF_8);
+    }
+
+    /** The roboRIO port whose use in the CAD list contains this text, for example "DIO 1". */
+    private static String portFor(String use) throws IOException {
+        var hits = csv().stream()
+                .filter(l -> l.matches("(DIO|PWM) \\d.*") && l.contains(use))
+                .map(l -> l.split(",")[0])
+                .toList();
+        assertEquals(1, hits.size(), use);
+        return hits.get(0);
+    }
+
     /** The CAD package's CAN map, "bus kind" by id. */
     private static Map<Integer, String> cadMap() throws IOException {
         var out = new TreeMap<Integer, String>();
-        try (var in = PortsTest.class.getResourceAsStream("/robotA_can_map.csv")) {
-            for (String line : new String(in.readAllBytes(), StandardCharsets.UTF_8).split("\r?\n")) {
-                String[] f = line.split(",");
-                if (f.length >= 3 && f[0].matches("\\d+")) {
-                    out.put(Integer.parseInt(f[0]), f[1] + " " + KIND.get(f[2]));
-                }
+        for (String line : csv()) {
+            String[] f = line.split(",");
+            if (f.length >= 3 && f[0].matches("\\d+")) {
+                out.put(Integer.parseInt(f[0]), f[1] + " " + KIND.get(f[2]));
             }
         }
         return out;
@@ -54,10 +69,10 @@ class PortsTest {
     }
 
     @Test
-    void rioPortsMatchTheCadList() {
-        assertEquals(0, Ports.ELEVATOR_HOME_DIO);
-        assertEquals(1, Ports.WRIST_ENCODER_DIO);
-        assertEquals(0, Ports.FUNNEL_LATCH_PWM);
-        assertEquals(1, Ports.CLIMBER_PAWL_PWM);
+    void rioPortsMatchTheCadList() throws IOException {
+        assertEquals(portFor("elevator home switch"), "DIO " + Ports.ELEVATOR_HOME_DIO);
+        assertEquals(portFor("wrist absolute encoder"), "DIO " + Ports.WRIST_ENCODER_DIO);
+        assertEquals(portFor("funnel latch servo"), "PWM " + Ports.FUNNEL_LATCH_PWM);
+        assertEquals(portFor("climber pawl servos"), "PWM " + Ports.CLIMBER_PAWL_PWM);
     }
 }

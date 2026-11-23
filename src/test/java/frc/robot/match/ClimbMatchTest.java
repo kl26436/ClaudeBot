@@ -9,6 +9,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.RobotContainer;
 import frc.robot.commands.ClimbCommands;
+import frc.robot.commands.ScoreCommands;
 import frc.robot.config.KeepOut;
 import frc.robot.subsystems.Superstructure.Wanted;
 import frc.robot.subsystems.climber.Climber.State;
@@ -38,6 +39,12 @@ class ClimbMatchTest {
         }
     }
 
+    private void ticks(double seconds) {
+        for (int i = 0; i < seconds / SimHarness.DT; i++) {
+            tick();
+        }
+    }
+
     private void runUntil(State s, double seconds) {
         for (int i = 0; i < seconds / SimHarness.DT && r.climber().state() != s; i++) {
             tick();
@@ -53,41 +60,51 @@ class ClimbMatchTest {
 
         // A short press, let go before anything has fired, puts the mechanism back in stow.
         scheduler.schedule(climb);
-        SimHarness.run(0.1);
+        ticks(0.1);
         assertEquals(Wanted.CLIMB, r.superstructure().wanted());
         climb.cancel();
-        SimHarness.run(1.5);
+        ticks(1.5);
         assertEquals(Wanted.STOW, r.superstructure().wanted());
         assertFalse(r.climber().committed());
         assertEquals(0, r.sim().trayDeg());
 
         // From a raised mechanism holding an algae: the algae is dropped, and the climb goes on.
         r.sim().giveAlgae();
-        SimHarness.run(0.2);
+        ticks(0.2);
         r.superstructure().setWanted(Wanted.ALGAE_LOW);
-        SimHarness.run(2.0);
+        ticks(2.0);
         scheduler.schedule(climb);
         runUntil(State.DEPLOYED, 12);
         assertFalse(r.superstructure().hasAlgae());
         assertEquals(0, r.sim().trueForkDeg(), 4);
 
-        // Nothing the driver presses moves the mechanism now.
+        // No command moves the mechanism now, and an algae sensor that sees the cage does not either.
         climb.cancel();
-        SimHarness.run(0.1);
+        ticks(0.1);
+        scheduler.schedule(ScoreCommands.netScore(r));
+        ticks(0.5);
+        scheduler.cancelAll();
         r.superstructure().setWanted(Wanted.L4);
-        for (int i = 0; i < 25; i++) {
-            tick();
-        }
+        ticks(0.5);
         assertEquals(Wanted.CLIMB, r.superstructure().wanted());
+        r.sim().giveAlgae();
+        ticks(1.0);
+        assertEquals(0, r.sim().trueWristDeg(), 3);
+        assertFalse(r.claw().isEjecting());
+
+        // A disable with the fork out, long enough for the wrist to droop, comes back to the pose.
+        SimHarness.disable();
+        SimHarness.run(1.0);
+        SimHarness.enable();
+        SimHarness.run(1.5);
+        assertEquals(0, r.sim().trueWristDeg(), 3);
 
         // Back onto the cage, press again, and up.
         r.sim().setCageCaptured(true);
         scheduler.schedule(climb);
         runUntil(State.CLIMBED, 6);
         climb.cancel();
-        for (int i = 0; i < 25; i++) {
-            tick();
-        }
+        ticks(0.5);
         assertEquals(88, r.sim().trueForkDeg(), 5);
     }
 }

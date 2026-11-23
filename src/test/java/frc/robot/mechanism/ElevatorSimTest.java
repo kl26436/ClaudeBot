@@ -57,9 +57,9 @@ class ElevatorSimTest {
 
     /**
      * Run tick by tick, tracking the highest carriage height and the lowest acceleration seen.
-     * Phoenix status signals arrive asynchronously, so a single 20 ms difference of the velocity
-     * can show a spike when one sample repeats and the next jumps. Acceleration is therefore the
-     * velocity change over {@link #ACCEL_WINDOW_TICKS} ticks (60 ms) using real timestamps.
+     * Acceleration is the true velocity change over {@link #ACCEL_WINDOW_TICKS} ticks (60 ms) of
+     * physics time: the status signals arrive asynchronously, and their differences show spikes that
+     * the carriage never feels.
      */
     private void runRecording(double seconds) {
         maxHeight = Math.max(maxHeight, elevator.carriageIn());
@@ -67,7 +67,7 @@ class ElevatorSimTest {
         for (int i = 0; i < ticks; i++) {
             SimHarness.run(SimHarness.DT);
             maxHeight = Math.max(maxHeight, elevator.carriageIn());
-            recentSamples.addLast(new double[] {System.nanoTime() / 1e9, elevator.velocityInPerS()});
+            recentSamples.addLast(new double[] {sim.physicsTimeS(), sim.trueVelocityInPerS()});
             if (recentSamples.size() > ACCEL_WINDOW_TICKS + 1) {
                 recentSamples.removeFirst();
             }

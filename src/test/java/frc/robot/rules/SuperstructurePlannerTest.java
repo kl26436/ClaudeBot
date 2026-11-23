@@ -116,7 +116,7 @@ class SuperstructurePlannerTest {
     @Test void interruptedMovesStayLegal() {
         var poses = Setpoints.Pose.values();
         double cruiseIn = frc.robot.config.RobotConstants.ElevatorK.CRUISE_IN_PER_S;
-        double accelIn = frc.robot.config.RobotConstants.ElevatorK.MAX_ACCEL_IN_PER_S2;
+        double accelIn = frc.robot.config.RobotConstants.ElevatorK.ACCEL_IN_PER_S2;
         double cruiseDeg = frc.robot.config.RobotConstants.WristK.CRUISE_DEG_PER_S;
         double accelDeg = frc.robot.config.RobotConstants.WristK.ACCEL_DEG_PER_S2;
         int worstCount = 0;
@@ -133,9 +133,9 @@ class SuperstructurePlannerTest {
                     if (tick == cut) goal = new Targets(c.carriageIn, c.wristDeg);
                     var sent = pending;
                     pending = SuperstructurePlanner.next(h, vh, w, vw, goal, false);
-                    for (int k = 0; k < 4; k++) {
-                        double[] hv = follow(h, vh, sent.carriageIn(), cruiseIn, accelIn, 0.005);
-                        double[] wv = follow(w, vw, sent.wristDeg(), cruiseDeg, accelDeg, 0.005);
+                    for (int k = 0; k < 10; k++) {
+                        double[] hv = follow(h, vh, sent.carriageIn(), cruiseIn, accelIn, 0.002);
+                        double[] wv = follow(w, vw, sent.wristDeg(), cruiseDeg, accelDeg, 0.002);
                         h = hv[0]; vh = hv[1]; w = wv[0]; vw = wv[1];
                         double hc = MathUtil.clamp(h, 0, 65.25), wc = MathUtil.clamp(w, -90, 75);
                         if (!KeepOut.isLegal(hc, wc)) {

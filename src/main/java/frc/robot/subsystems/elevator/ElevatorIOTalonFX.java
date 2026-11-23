@@ -29,13 +29,15 @@ import frc.robot.config.RobotConstants.ElevatorK;
  * Phoenix works in motor rotations; this class converts to and from inches of carriage travel.
  */
 public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
-    // Control gains in volts. Units follow the mechanism: inches, inches per second.
+    // Control gains in volts, per motor rotation.
     protected static final double KG = 0.46; // PLACEHOLDER(tuning)
     protected static final double KS = 0.0; // PLACEHOLDER(tuning)
-    protected static final double KV = 0.0903; // PLACEHOLDER(tuning)
-    protected static final double KA = 0.0012; // PLACEHOLDER(tuning)
-    protected static final double KP = 0.5; // PLACEHOLDER(tuning)
-    protected static final double KD = 0.01; // PLACEHOLDER(tuning)
+    protected static final double KV = 0.124; // PLACEHOLDER(tuning)
+    protected static final double KA = 0.0017; // PLACEHOLDER(tuning)
+    protected static final double KP = 0.7; // PLACEHOLDER(tuning)
+    protected static final double KD = 0.014; // PLACEHOLDER(tuning)
+
+    private static final double ROT_PER_IN = 1.0 / ElevatorK.IN_PER_MOTOR_ROT;
 
     private static final double FAST_SIGNAL_HZ = 250;
     private static final double SLOW_SIGNAL_HZ = 50;
@@ -65,10 +67,8 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
 
         config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        // Phoenix reports mechanism position in inches of carriage travel.
-        config.Feedback.SensorToMechanismRatio = 1.0 / ElevatorK.IN_PER_MOTOR_ROT;
-        config.MotionMagic.MotionMagicCruiseVelocity = ElevatorK.CRUISE_IN_PER_S;
-        config.MotionMagic.MotionMagicAcceleration = ElevatorK.MAX_ACCEL_IN_PER_S2;
+        config.MotionMagic.MotionMagicCruiseVelocity = ElevatorK.CRUISE_IN_PER_S * ROT_PER_IN;
+        config.MotionMagic.MotionMagicAcceleration = ElevatorK.ACCEL_IN_PER_S2 * ROT_PER_IN;
         config.Slot0.GravityType = GravityTypeValue.Elevator_Static;
         config.Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseClosedLoopSign;
         config.Slot0.kG = KG;
@@ -77,7 +77,7 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
         config.Slot0.kA = KA;
         config.Slot0.kP = KP;
         config.Slot0.kD = KD;
-        config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = ElevatorK.SOFT_MAX_IN;
+        config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = ElevatorK.SOFT_MAX_IN * ROT_PER_IN;
         config.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0;
         // Soft limits are meaningless until the position is zeroed on the home switch.
         config.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
@@ -116,8 +116,8 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
         in.connected = BaseStatusSignal.refreshAll(position, velocity, appliedVolts, statorAmps, supplyAmps).isOK();
         in.followerConnected = BaseStatusSignal.refreshAll(followerPosition).isOK();
         in.homeSwitch = homeSwitchClosed();
-        in.carriageIn = position.getValueAsDouble();
-        in.velocityInPerS = velocity.getValueAsDouble();
+        in.carriageIn = position.getValueAsDouble() * ElevatorK.IN_PER_MOTOR_ROT;
+        in.velocityInPerS = velocity.getValueAsDouble() * ElevatorK.IN_PER_MOTOR_ROT;
         in.appliedVolts = appliedVolts.getValueAsDouble();
         in.statorAmps = statorAmps.getValueAsDouble();
         in.supplyAmps = supplyAmps.getValueAsDouble();
@@ -126,7 +126,7 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
 
     @Override
     public void setTargetIn(double carriageIn) {
-        left.setControl(positionRequest.withPosition(carriageIn));
+        left.setControl(positionRequest.withPosition(carriageIn * ROT_PER_IN));
     }
 
     @Override
@@ -161,7 +161,7 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
                 .apply(new SoftwareLimitSwitchConfigs()
                         .withForwardSoftLimitEnable(enabled)
                         .withReverseSoftLimitEnable(enabled)
-                        .withForwardSoftLimitThreshold(ElevatorK.SOFT_MAX_IN)
+                        .withForwardSoftLimitThreshold(ElevatorK.SOFT_MAX_IN * ROT_PER_IN)
                         .withReverseSoftLimitThreshold(0));
     }
 

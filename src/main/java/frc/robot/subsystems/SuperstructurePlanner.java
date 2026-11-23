@@ -15,6 +15,9 @@ public final class SuperstructurePlanner {
 
     public static final double MARGIN_IN = 0.5;
 
+    /** A carriage this close to a band's edge counts as in both bands, so hovering there cannot flip the wrist target. */
+    static final double EDGE_IN = 0.25;
+
     /** A wrist at least this high clears everything with the carriage at rest (rev3 assembly: 0.27 in). */
     static final double CLEAR_AT_REST_DEG = -40;
 
@@ -101,10 +104,17 @@ public final class SuperstructurePlanner {
         }
         // Every zone the carriage passes through before it can stop must allow the wrist target too. The
         // stow-only zone counts only for a stowed wrist: one that is out of stow cannot get back in time.
-        double hStop = clamp(stoppingPoint(h, carriageVelInPerS, ElevatorK.MAX_ACCEL_IN_PER_S2), 0, ElevatorK.SOFT_MAX_IN);
+        // The carriage may still be speeding up for the loop it takes the new target to reach it.
+        double vSoon = Math.abs(carriageVelInPerS) < 1 ? carriageVelInPerS
+                : carriageVelInPerS + Math.signum(carriageVelInPerS) * ElevatorK.ACCEL_IN_PER_S2 * LOOP_S;
+        double hStop = clamp(stoppingPoint(h, vSoon, ElevatorK.ACCEL_IN_PER_S2), 0, ElevatorK.SOFT_MAX_IN);
         boolean stowed = w <= WristK.MIN_DEG + KeepOut.STOW_TOL_DEG;
-        double slideLow = stowed ? Math.min(h, hStop) : Math.max(Math.min(h, hStop), Math.min(h, KeepOut.UNSTOW_MIN_IN));
-        KeepOut.Range sliding = marginedRangeOver(slideLow, Math.max(h, hStop));
+        double slideLow = Math.max(0, Math.min(h, hStop) - EDGE_IN);
+        if (!stowed) {
+            slideLow = Math.max(slideLow, Math.min(h, KeepOut.UNSTOW_MIN_IN));
+        }
+        double slideHigh = Math.min(ElevatorK.SOFT_MAX_IN, Math.max(h, hStop) + EDGE_IN);
+        KeepOut.Range sliding = marginedRangeOver(slideLow, slideHigh);
         if (sliding != null) {
             double lo = Math.max(range.min(), sliding.min());
             double hi = Math.min(range.max(), sliding.max());

@@ -17,6 +17,7 @@ public class ElevatorIOSim extends ElevatorIOTalonFX {
     private final TalonFXSimState leftSim;
     private final TalonFXSimState rightSim;
     private boolean homeSwitchBroken = false;
+    private double physicsTimeS = 0;
 
     public ElevatorIOSim() {
         super(Ports.ELEVATOR_LEFT, Ports.ELEVATOR_RIGHT, Ports.ELEVATOR_HOME_DIO);
@@ -46,6 +47,7 @@ public class ElevatorIOSim extends ElevatorIOTalonFX {
         rightSim.setSupplyVoltage(battery);
         physics.setInput(leftSim.getMotorVoltage());
         physics.update(dtSeconds);
+        physicsTimeS += dtSeconds;
         writeRotor();
     }
 
@@ -62,6 +64,15 @@ public class ElevatorIOSim extends ElevatorIOTalonFX {
     /** Where the carriage really is, whatever the sensors say. */
     public double trueCarriageIn() {
         return heightIn();
+    }
+
+    /** How fast the carriage is really moving, and for how long the physics has run. */
+    public double trueVelocityInPerS() {
+        return Units.metersToInches(physics.getVelocityMetersPerSecond());
+    }
+
+    public double physicsTimeS() {
+        return physicsTimeS;
     }
 
     private double heightIn() {

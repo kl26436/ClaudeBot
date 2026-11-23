@@ -69,8 +69,12 @@ public final class RobotConstants {
         public static final double IN_PER_MOTOR_ROT = SPROCKET_TEETH * CHAIN_PITCH_IN * STAGES / GEAR_RATIO;
         public static final double TRAVEL_IN = 66;
         public static final double SOFT_MAX_IN = 65.25;
+        /** Nothing hauls the carriage down, so it may not be lowered faster than this (elevator Rev F). */
         public static final double MAX_ACCEL_IN_PER_S2 = 0.6 * 386.09;
-        public static final double CRUISE_IN_PER_S = 65; // PLACEHOLDER(tuning)
+        /** What the motion profile asks for: under the cap, leaving room for the carriage to catch up with it. */
+        public static final double ACCEL_IN_PER_S2 = 0.55 * 386.09;
+
+        public static final double CRUISE_IN_PER_S = 110; // PLACEHOLDER(tuning)
         public static final double PIVOT_REST_HEIGHT_IN = 24.5;
         public static final double PIVOT_X_IN = 4.5;
         public static final double CARRIAGE_GROUP_LB = 25;

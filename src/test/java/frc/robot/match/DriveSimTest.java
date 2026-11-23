@@ -88,6 +88,7 @@ class DriveSimTest {
         drive.setTeleopInput(1, 0, 0);
         SimHarness.run(1.5);
         double fullSpeedM = sim.truePose().getTranslation().getDistance(OPEN_FIELD.getTranslation());
+        double fullMps = speedMps();
 
         placeAt(OPEN_FIELD);
         drive.setSpeedScale(0.35);
@@ -96,7 +97,8 @@ class DriveSimTest {
         double scaledM = sim.truePose().getTranslation().getDistance(OPEN_FIELD.getTranslation());
 
         assertTrue(fullSpeedM > 1.5, "full stick should cover real distance, covered " + fullSpeedM);
-        assertTrue(scaledM < fullSpeedM / 2, "scaled run covered " + scaledM + " m against " + fullSpeedM);
+        assertTrue(scaledM < fullSpeedM * 0.6, "scaled run covered " + scaledM + " m against " + fullSpeedM);
+        assertTrue(speedMps() < fullMps * 0.45, "scaled run reached " + speedMps() + " m/s against " + fullMps);
     }
 
     private double speedMps() {

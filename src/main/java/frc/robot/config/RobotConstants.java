@@ -39,17 +39,22 @@ public final class RobotConstants {
         public static final double STEER_RATIO = 150.0 / 7.0;
         /** Drive motor turns per steer turn with the wheel held (SDS MK4i: 50/14). */
         public static final double COUPLING_RATIO = 50.0 / 14.0; // PLACEHOLDER(drawing)
-        public static final double BUMPER_FACE_FROM_CENTRE_IN = 17.4; // PLACEHOLDER(drawing)
+        public static final double BUMPER_FACE_FROM_CENTRE_IN = 34.5 / 2;
         public static final double MAX_SPEED_MPS = 4.67;
-        public static final double ROBOT_MASS_LB = 140; // PLACEHOLDER(drawing)
+        /** On the field with battery and bumpers (drawing R-001, rev3; estimated, not weighed). */
+        public static final double ROBOT_MASS_LB = 142.8;
+        /** Starting current limits from drawing EL-001. */
+        public static final double DRIVE_STATOR_LIMIT_A = 60;
+
+        public static final double STEER_STATOR_LIMIT_A = 30;
 
         /**
          * Steady acceleration that lifts the far wheels, in g, by carriage height (inches): the lowest of
-         * forward, back and sideways on drawing R-001 (rev2 balance table, battery and bumpers on).
+         * forward, back and sideways on drawing R-001 (rev3 balance table, battery and bumpers on).
          */
         public static final double[] TIP_CARRIAGE_IN = {0, 33, 66};
 
-        public static final double[] TIP_ACCEL_G = {1.07, 0.70, 0.51};
+        public static final double[] TIP_ACCEL_G = {1.07, 0.71, 0.50};
     }
 
     /** Elevator carriage. Units are inches of carriage travel. */
@@ -71,6 +76,7 @@ public final class RobotConstants {
         public static final double CARRIAGE_GROUP_LB = 25;
         public static final double STAGE_A_LB = 5; // PLACEHOLDER(drawing)
         public static final double STAGE_B_LB = 4; // PLACEHOLDER(drawing)
+        public static final double STATOR_LIMIT_A = 60;
         public static final double HOME_VOLTS = -1.5;
         public static final double HOME_TIMEOUT_S = 3.0;
     }
@@ -85,10 +91,10 @@ public final class RobotConstants {
         public static final double HARD_MIN_DEG = -93;
         public static final double HARD_MAX_DEG = 77;
         public static final double STATOR_LIMIT_A = 40;
-        public static final double TURNING_LB = 15.3;
-        public static final double GRAVITY_LBIN_EMPTY = 125;
-        public static final double GRAVITY_LBIN_CORAL = 138;
-        public static final double GRAVITY_LBIN_ALGAE = 151;
+        public static final double TURNING_LB = 13.3;
+        public static final double GRAVITY_LBIN_EMPTY = 110;
+        public static final double GRAVITY_LBIN_CORAL = 124;
+        public static final double GRAVITY_LBIN_ALGAE = 137;
         public static final double MOI_KGM2 = 0.39; // PLACEHOLDER(drawing)
         public static final double CRUISE_DEG_PER_S = 400; // PLACEHOLDER(tuning)
         public static final double ACCEL_DEG_PER_S2 = 1600; // PLACEHOLDER(tuning)
@@ -100,7 +106,7 @@ public final class RobotConstants {
 
         public static final double GEAR_RATIO = 3;
         public static final double WHEEL_DIAMETER_IN = 2;
-        public static final double STATOR_LIMIT_A = 40; // PLACEHOLDER(tuning)
+        public static final double STATOR_LIMIT_A = 30;
         /** Roller inertia at the output shaft, for the simulation. */
         public static final double MOI_KGM2 = 0.0015; // PLACEHOLDER(drawing)
     }
@@ -115,13 +121,67 @@ public final class RobotConstants {
         public static final double MOI_KGM2 = 0.003; // PLACEHOLDER(drawing)
     }
 
+    /** Climber winch, pawls and funnel latch. Fork angles: 90 stowed, 0 level. */
+    public static final class ClimberK {
+        private ClimberK() {}
+
+        /** Motor turns per fork turn: 25:1 gearbox, then the spool on a 3.5 in rope track. */
+        public static final double GEAR_RATIO = 25 * 3.5 / 0.56;
+
+        public static final double STOWED_DEG = 90;
+        public static final double LEVEL_DEG = 0;
+        /** Stop bolts; the fork rests on the first with the rope slack. */
+        public static final double LEVEL_STOP_DEG = -2;
+
+        public static final double HARD_MAX_DEG = 97;
+        /** Where the climb stops, short of the hard stop. */
+        public static final double CLIMBED_DEG = 88;
+
+        public static final double CLIMBED_TOL_DEG = 1.5;
+        public static final double LEVEL_TOL_DEG = 1.0;
+        /** One ratchet tooth of fork travel. */
+        public static final double TOOTH_DEG = 3.6;
+
+        /** Wound in this far to take the load off the pawls before lifting them. */
+        public static final double TENSION_DEG = 3; // PLACEHOLDER(tuning)
+
+        public static final double TENSION_MAX_DEG = 95;
+        public static final double TENSION_TOL_DEG = 1.0;
+        public static final double STATOR_LIMIT_A = 60;
+        public static final double CRUISE_DEG_PER_S = 60; // PLACEHOLDER(tuning)
+        public static final double ACCEL_DEG_PER_S2 = 240; // PLACEHOLDER(tuning)
+        /** Worst torque on the fork while lifting the robot (drawing CL-000). */
+        public static final double CLIMB_LBIN = 2140;
+
+        public static final double STALL_A = 55; // PLACEHOLDER(tuning)
+        public static final double STALL_DEG_PER_S = 2;
+        public static final double STALL_S = 0.5;
+
+        /** Servo horn swings: pawls 145 to 123 degrees, latch 10 up to 32 down. */
+        public static final double PAWL_HORN_SWING_DEG = 22;
+
+        public static final double LATCH_HORN_SWING_DEG = 42;
+        /** Time for the tubing to throw the tray open; nothing senses it. */
+        public static final double FUNNEL_OPEN_S = 1.0; // PLACEHOLDER(robot-check)
+        /** Time for the servos to lift the pawls; nothing senses them. */
+        public static final double PAWL_LIFT_S = 0.4; // PLACEHOLDER(robot-check)
+
+        // Joint positions in the robot frame, inches, for AdvantageScope.
+        public static final double PIVOT_X_IN = -13.5;
+        public static final double PIVOT_Z_IN = 16.0;
+        public static final double TRAY_HINGE_Y_IN = -7.1;
+        public static final double TRAY_HINGE_Z_IN = 27.5;
+    }
+
     /** Intake camera. */
     public static final class CameraK {
         private CameraK() {}
 
-        public static final double HEIGHT_IN = 9.57;
+        // Limelight 4 body centre (13.0, 0, 9.45), pitched up 12 degrees, lens 0.64 in ahead of it
+        // along the optical axis (drivebase Rev F).
         public static final double PITCH_UP_DEG = 12;
-        public static final double FORWARD_IN = 12.0; // PLACEHOLDER(drawing)
+        public static final double HEIGHT_IN = 9.45 + 0.64 * Math.sin(Math.toRadians(PITCH_UP_DEG));
+        public static final double FORWARD_IN = 13.0 + 0.64 * Math.cos(Math.toRadians(PITCH_UP_DEG));
         public static final double H_FOV_DEG = 82;
         public static final double V_FOV_DEG = 56.2;
         public static final double H_PIXELS = 1280;

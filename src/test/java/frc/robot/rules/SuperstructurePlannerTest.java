@@ -29,28 +29,67 @@ class SuperstructurePlannerTest {
         }
     }
 
-    @Test void stowToL2WaitsBelowSixUntilWristIsUp() {
+    @Test void stowToL2WaitsAtTheUnstowHeightUntilTheWristIsUp() {
         var t = SuperstructurePlanner.next(0, 0, -90, 0, new Targets(17.5, -35), false);
-        assertEquals(5.5, t.carriageIn(), 1e-9);
+        assertEquals(1.25, t.carriageIn(), 1e-9);
         assertEquals(-90, t.wristDeg(), 1e-9);
+        var at = SuperstructurePlanner.next(1.25, 0, -90, 0, new Targets(17.5, -35), false);
+        assertEquals(1.25, at.carriageIn(), 1e-9, "a stowed wrist above the band would meet the climber fork");
+        assertEquals(-35, at.wristDeg(), 1e-9);
     }
 
-    @Test void stowToL4TurnsTheWristThroughTheFunnelZoneFirst() { // L4's -52 is illegal between 6 and 23 in
-        var t = SuperstructurePlanner.next(5.5, 0, -90, 0, new Targets(65.25, -52), false);
-        assertEquals(-35, t.wristDeg(), 1e-9);
-        assertEquals(5.5, t.carriageIn(), 1e-9);
+    @Test void stowingStopsAtTheUnstowHeightUntilTheWristIsStowed() {
+        var t = SuperstructurePlanner.next(10, 0, -35, 0, new Targets(0, -90), false);
+        assertEquals(1.25, t.carriageIn(), 1e-9);
+        var at = SuperstructurePlanner.next(1.25, 0, -35, 0, new Targets(0, -90), false);
+        assertEquals(1.25, at.carriageIn(), 1e-9);
+        assertEquals(-90, at.wristDeg(), 1e-9);
+        assertEquals(0, SuperstructurePlanner.next(1.25, 0, -90, 0, new Targets(0, -90), false).carriageIn(), 1e-9);
+    }
+
+    @Test void theWristHeadsForTheTightestBandOnTheWayFromTheStart() {
+        // L4's -52 is illegal from 9 to 23 in, so the wrist goes to the 15 to 23 in limit at once.
+        var t = SuperstructurePlanner.next(1.25, 0, -90, 0, new Targets(65.25, -52), false);
+        assertEquals(1.25, t.carriageIn(), 1e-9);
+        assertEquals(-37, t.wristDeg(), 1e-9);
+        var below9 = SuperstructurePlanner.next(8.5, 0, -52, 0, new Targets(65.25, -52), false);
+        assertEquals(8.5, below9.carriageIn(), 1e-9, "held until the wrist is inside the next band's limit");
+        assertEquals(-37, below9.wristDeg(), 1e-9);
+        assertEquals(-52, SuperstructurePlanner.next(30, 0, -37, 0, new Targets(65.25, -52), false).wristDeg(), 1e-9);
     }
 
     @Test void algaeNeverDropsBelowTen() {
         var t = SuperstructurePlanner.next(8.8, 0, 46, 0, new Targets(0, -90), true);
         assertTrue(t.wristDeg() >= 10);
-        assertTrue(t.carriageIn() >= 1.75);
+        assertTrue(t.carriageIn() >= 1.25);
     }
 
     @Test void stowedWristReadingJustUnderMinus90StillLeavesStow() {
         var t = SuperstructurePlanner.next(0, 0, -90.5, 0, new Targets(17.5, -35), false);
-        assertEquals(5.5, t.carriageIn(), 1e-9);
+        assertEquals(1.25, t.carriageIn(), 1e-9);
         assertEquals(-90, t.wristDeg(), 1e-9);
+    }
+
+    /**
+     * The intake pose sits 0.25 in above the stow-only zone. A carriage that dips into it must rise
+     * again with the wrist still: swinging the wrist down to stow there would hit the lift gearbox.
+     */
+    @Test void aCarriageThatDipsBelowTheBandRisesWithTheWristHeld() {
+        for (var goal : new Targets[] {new Targets(1.25, -35), new Targets(0, -90), new Targets(17.5, -35)}) {
+            for (double w : new double[] {-74, -65, -55, -45, -35, 0, 40}) {
+                var t = SuperstructurePlanner.next(0.6, 0, w, 0, goal, false);
+                assertEquals(1.25, t.carriageIn(), 1e-9, "w=" + w + " goal " + goal);
+                assertTrue(t.wristDeg() >= Math.min(w, -40) - 1e-9, "w=" + w + " goal " + goal + " sent to " + t.wristDeg());
+            }
+        }
+        // Barely out of stow is the one case where stow is the nearer safe place.
+        assertEquals(-90, SuperstructurePlanner.next(0.5, 0, -86, 0, new Targets(0, -90), false).wristDeg(), 1e-9);
+    }
+
+    @Test void aCarriageSettlingOntoTheIntakeHeightDoesNotSendTheWristToStow() {
+        // Slowing down onto 1.25 in, one loop of latency reaches below the band.
+        var t = SuperstructurePlanner.next(1.7, -35, -35, 0, new Targets(1.25, -35), false);
+        assertEquals(-35, t.wristDeg(), 1e-9);
     }
 
     /**
@@ -124,31 +163,31 @@ class SuperstructurePlannerTest {
     @Test void aCarriageSlidingDownHoldsTheWristForTheBandItWillReach() {
         // At 30 in, falling at 65 in/s: it cannot stop above 23 in, so L4's -52 must wait.
         var t = SuperstructurePlanner.next(30, -65, -35, 0, new Targets(65.25, -52), false);
-        assertTrue(t.wristDeg() >= -35, "wrist sent to " + t.wristDeg() + " while the carriage slides into the funnel band");
+        assertTrue(t.wristDeg() >= -37, "wrist sent to " + t.wristDeg() + " while the carriage slides into the funnel band");
         var stopped = SuperstructurePlanner.next(30, 0, -35, 0, new Targets(65.25, -52), false);
         assertEquals(-52, stopped.wristDeg(), 1e-9, "at rest above 23 in, -52 is fine");
     }
 
     @Test void aWristBarelyClearOfTheFunnelDoesNotReleaseTheCarriage() {
-        // -37.5 is legal above 6 in (limit -38), but with no margin a little lag puts it inside.
-        var t = SuperstructurePlanner.next(5.5, 0, -37.5, 0, new Targets(17.5, -35), false);
-        assertTrue(t.carriageIn() <= 5.5, "carriage released into the funnel band at " + t.carriageIn());
+        // -39.5 is legal above 15 in (limit -40), but with no margin a little lag puts it inside.
+        var t = SuperstructurePlanner.next(14.5, 0, -39.5, 0, new Targets(17.5, -35), false);
+        assertTrue(t.carriageIn() <= 14.5, "carriage released into the funnel band at " + t.carriageIn());
         assertEquals(-35, t.wristDeg(), 1e-9);
     }
 
     @Test void aWristSettledInsideTheMarginReleasesTheCarriage() {
-        var t = SuperstructurePlanner.next(5.5, 0, -36.0, 0, new Targets(17.5, -35), false);
+        var t = SuperstructurePlanner.next(14.5, 0, -38.5, 0, new Targets(17.5, -35), false);
         assertEquals(17.5, t.carriageIn(), 1e-9);
     }
 
     @Test void aWristSaggingInTheFunnelBandHoldsTheCarriage() {
-        var t = SuperstructurePlanner.next(10, 0, -37.5, 0, new Targets(0, -90), false);
-        assertEquals(10, t.carriageIn(), 1e-9);
+        var t = SuperstructurePlanner.next(17, 0, -39.5, 0, new Targets(0, -90), false);
+        assertEquals(17, t.carriageIn(), 1e-9);
     }
 
     @Test void illegalStateHoldsTheCarriage() {
-        var t = SuperstructurePlanner.next(10, 0, -60, 0, new Targets(30, -35), false);
-        assertEquals(10, t.carriageIn(), 1e-9);
+        var t = SuperstructurePlanner.next(17, 0, -60, 0, new Targets(30, -35), false);
+        assertEquals(17, t.carriageIn(), 1e-9);
         assertEquals(-35, t.wristDeg(), 1e-9);
     }
 
@@ -162,13 +201,13 @@ class SuperstructurePlannerTest {
     @Test void algaeFlagNeverPullsTheWristOutOfStow() {
         var t = SuperstructurePlanner.next(0, 0, -90, 0, new Targets(17.5, -35), true);
         assertEquals(-90, t.wristDeg(), 1e-9);
-        assertEquals(5.5, t.carriageIn(), 1e-9);
+        assertEquals(1.25, t.carriageIn(), 1e-9);
     }
 
     @Test void algaeWithStowGoalKeepsTheCarriageAboveTheStowZone() {
-        var t = SuperstructurePlanner.next(2, 0, -90, 0, new Targets(0, -90), true);
+        var t = SuperstructurePlanner.next(1.3, 0, -90, 0, new Targets(0, -90), true);
         assertEquals(10, t.wristDeg(), 1e-9);
-        assertEquals(1.75, t.carriageIn(), 1e-9);
+        assertEquals(1.25, t.carriageIn(), 1e-9);
     }
 
     @Test void algaeMovesStayLegalAndKeepTheFloor() {
@@ -188,7 +227,7 @@ class SuperstructurePlannerTest {
                 String at = from + " to " + to + " tick " + tick + " h=" + h + " w=" + w;
                 assertTrue(KeepOut.isLegal(h, w), at);
                 assertTrue(w >= KeepOut.ALGAE_MIN_WRIST_DEG - 1e-9, at);
-                assertTrue(h >= 1.25 - 1e-9, at);
+                assertTrue(h >= KeepOut.UNSTOW_MIN_IN - 1e-9, at);
             }
         }
     }

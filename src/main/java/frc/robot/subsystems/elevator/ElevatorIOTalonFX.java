@@ -25,9 +25,8 @@ import frc.robot.config.RobotConstants;
 import frc.robot.config.RobotConstants.ElevatorK;
 
 /**
- * Two Kraken X60s on the elevator. The left motor is the leader and reports in inches of carriage
- * travel (the sensor-to-mechanism ratio folds the gearbox and chain stages into one factor); the
- * right motor follows it.
+ * Two Kraken X60s on the elevator. The left motor is the leader and the right motor follows it.
+ * Phoenix works in motor rotations; this class converts to and from inches of carriage travel.
  */
 public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
     // Control gains in volts. Units follow the mechanism: inches, inches per second.
@@ -83,10 +82,14 @@ public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
         // Soft limits are meaningless until the position is zeroed on the home switch.
         config.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
         config.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+        config.CurrentLimits.StatorCurrentLimit = ElevatorK.STATOR_LIMIT_A;
+        config.CurrentLimits.StatorCurrentLimitEnable = true;
         left.getConfigurator().apply(config);
 
         // Right motor is mounted mirrored, so it opposes the leader.
-        right.getConfigurator().apply(new TalonFXConfiguration().withMotorOutput(config.MotorOutput));
+        right.getConfigurator().apply(new TalonFXConfiguration()
+                .withMotorOutput(config.MotorOutput)
+                .withCurrentLimits(config.CurrentLimits));
         right.setControl(new Follower(left.getDeviceID(), MotorAlignmentValue.Opposed));
 
         position = left.getPosition();

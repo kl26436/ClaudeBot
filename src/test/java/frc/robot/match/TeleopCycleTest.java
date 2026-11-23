@@ -196,7 +196,9 @@ class TeleopCycleTest {
     @Test
     void componentPosesFollowTheMechanism() {
         var stowed = r.sim().componentPoses();
-        assertEquals(4, stowed.length);
+        assertEquals(6, stowed.length);
+        assertEquals(0, stowed[4].getRotation().getY(), 1e-3, "climber fork stowed");
+        assertEquals(0, stowed[5].getRotation().getX(), 1e-3, "funnel tray closed");
         assertEquals(0, stowed[2].getZ(), 0.01, "carriage at rest");
         assertEquals(edu.wpi.first.math.util.Units.inchesToMeters(24.5), stowed[3].getZ(), 0.01, "wrist pivot at rest height");
         r.superstructure().setWanted(Wanted.L3);

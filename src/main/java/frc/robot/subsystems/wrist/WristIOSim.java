@@ -1,31 +1,30 @@
 package frc.robot.subsystems.wrist;
 
-import com.ctre.phoenix6.sim.CANdiSimState;
 import com.ctre.phoenix6.sim.TalonFXSimState;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.simulation.DutyCycleEncoderSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import frc.robot.config.Ports;
 import frc.robot.config.RobotConstants.WristK;
 
-/** Wrist on simulated Phoenix devices, with a WPILib {@link SingleJointedArmSim} supplying the physics. */
+/** Wrist on a simulated Kraken and duty-cycle encoder, with a WPILib {@link SingleJointedArmSim} supplying the physics. */
 public class WristIOSim extends WristIOTalonFX {
     private static final double LBIN_TO_NM = 0.1129848;
     /** The gravity constant {@link SingleJointedArmSim} uses internally. */
     private static final double MODEL_G = 9.8;
-    /** PWM frame length of a REV Through Bore encoder (975.6 Hz). */
-    private static final double PWM_PERIOD_S = 1.0 / 975.6;
 
     private final TalonFXSimState motorSim;
-    private final CANdiSimState candiSim;
+    private final DutyCycleEncoderSim encoderSim;
     private SingleJointedArmSim physics;
     private boolean encoderConnected = true;
 
     public WristIOSim() {
-        super(Ports.WRIST, Ports.WRIST_CANDI);
+        super(Ports.WRIST, Ports.WRIST_ENCODER_DIO);
         motorSim = motor.getSimState();
-        candiSim = candi.getSimState();
+        encoderSim = new DutyCycleEncoderSim(encoder);
         physics = build(WristK.GRAVITY_LBIN_EMPTY, Math.toRadians(WristK.MIN_DEG), 0);
         write();
     }
@@ -53,7 +52,6 @@ public class WristIOSim extends WristIOTalonFX {
     public void simulate(double dtSeconds) {
         double battery = RobotController.getBatteryVoltage();
         motorSim.setSupplyVoltage(battery);
-        candiSim.setSupplyVoltage(battery);
         physics.setInputVoltage(motorSim.getMotorVoltage());
         physics.update(dtSeconds);
         write();
@@ -70,7 +68,7 @@ public class WristIOSim extends WristIOTalonFX {
         physics = build(lbIn, physics.getAngleRads(), physics.getVelocityRadPerSec());
     }
 
-    /** Unplug or replug the absolute encoder's PWM signal. */
+    /** Unplug or replug the absolute encoder. */
     public void setEncoderConnected(boolean connected) {
         encoderConnected = connected;
         write();
@@ -86,9 +84,7 @@ public class WristIOSim extends WristIOTalonFX {
         double rps = Units.radiansToRotations(physics.getVelocityRadPerSec());
         motorSim.setRawRotorPosition(rotations * WristK.GEAR_RATIO);
         motorSim.setRotorVelocity(rps * WristK.GEAR_RATIO);
-        candiSim.setPwm1Connected(encoderConnected);
-        candiSim.setPwm1RiseRise(encoderConnected ? PWM_PERIOD_S : 0);
-        candiSim.setPwm1Position(rotations);
-        candiSim.setPwm1Velocity(rps);
+        encoderSim.setConnected(encoderConnected);
+        encoderSim.set(MathUtil.inputModulus(ENCODER_SIGN * rotations + ENCODER_OFFSET_ROT, 0, 1));
     }
 }

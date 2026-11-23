@@ -14,6 +14,13 @@ public final class SuperstructurePlanner {
     public record Targets(double carriageIn, double wristDeg) {}
 
     public static final double MARGIN_IN = 0.5;
+
+    /** A wrist at least this high clears everything with the carriage at rest (rev3 assembly: 0.27 in). */
+    static final double CLEAR_AT_REST_DEG = -40;
+
+    /** A wrist below this clears everything on its way back to stow with the carriage at rest. */
+    static final double NEAR_STOW_DEG = -80;
+
     public static final double MARGIN_DEG = 3.0;
 
     /**
@@ -67,24 +74,37 @@ public final class SuperstructurePlanner {
             goalWrist = Math.max(goalWrist, KeepOut.ALGAE_MIN_WRIST_DEG);
         }
 
-        // Wrist target: stay inside the margined range of this zone and, when heading to another zone, of the next one.
+        // The carriage has dipped below the unstow band with the wrist out of stow. Swinging the wrist
+        // down to stow here would put the claw into the lift gearbox, so rise first.
+        if (KeepOut.zoneIndexAt(h) == 0 && w > NEAR_STOW_DEG) {
+            return new Targets(KeepOut.UNSTOW_IN, w >= CLEAR_AT_REST_DEG ? Math.max(goalWrist, CLEAR_AT_REST_DEG) : w);
+        }
+
+        // Wrist target: inside the margined range of this zone and of every zone on the way to the goal,
+        // as far along the way as one angle can satisfy them all (stow is never on the way).
         int zone = KeepOut.zoneIndexAt(h);
         int goalZone = KeepOut.zoneIndexAt(goal.carriageIn());
         KeepOut.Range range = marginedRange(zone);
-        if (goalZone != zone) {
-            KeepOut.Range nextRange = marginedRange(zone + (goalZone > zone ? 1 : -1));
+        for (int z = zone; z != goalZone; ) {
+            z += goalZone > z ? 1 : -1;
+            KeepOut.Range nextRange = marginedRange(z);
             double lo = Math.max(range.min(), nextRange.min());
             double hi = Math.min(range.max(), nextRange.max());
             // With algae, never narrow a range that reaches the floor down to one that cannot (the stow-only zone).
             boolean keepsAlgaeFloor = !hasAlgae || range.max() < KeepOut.ALGAE_MIN_WRIST_DEG
                     || hi >= KeepOut.ALGAE_MIN_WRIST_DEG;
-            if (lo <= hi && keepsAlgaeFloor) {
-                range = new KeepOut.Range(lo, hi);
+            boolean leavesTheBand = z != 0 || zone == 1;
+            if (lo > hi || !keepsAlgaeFloor || !leavesTheBand) {
+                break;
             }
+            range = new KeepOut.Range(lo, hi);
         }
-        // Every zone the carriage passes through before it can stop must allow the wrist target too.
+        // Every zone the carriage passes through before it can stop must allow the wrist target too. The
+        // stow-only zone counts only for a stowed wrist: one that is out of stow cannot get back in time.
         double hStop = clamp(stoppingPoint(h, carriageVelInPerS, ElevatorK.MAX_ACCEL_IN_PER_S2), 0, ElevatorK.SOFT_MAX_IN);
-        KeepOut.Range sliding = marginedRangeOver(Math.min(h, hStop), Math.max(h, hStop));
+        boolean stowed = w <= WristK.MIN_DEG + KeepOut.STOW_TOL_DEG;
+        double slideLow = stowed ? Math.min(h, hStop) : Math.max(Math.min(h, hStop), Math.min(h, KeepOut.UNSTOW_MIN_IN));
+        KeepOut.Range sliding = marginedRangeOver(slideLow, Math.max(h, hStop));
         if (sliding != null) {
             double lo = Math.max(range.min(), sliding.min());
             double hi = Math.min(range.max(), sliding.max());

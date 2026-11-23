@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.config.RobotConstants.DriveK;
@@ -12,6 +13,7 @@ import frc.robot.subsystems.claw.AlgaeClaw;
 import frc.robot.subsystems.coral.CoralRollers;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.wrist.Wrist;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -34,7 +36,9 @@ public class Superstructure extends SubsystemBase {
         ALGAE_LOW,
         ALGAE_HIGH,
         NET,
-        PROCESSOR
+        PROCESSOR,
+        /** Out of the climber's way: wrist level, carriage just off the bottom. */
+        CLIMB
     }
 
     /** Drive speed is full up to this carriage height, then falls linearly to {@link #MIN_SPEED_SCALE} at the top. */
@@ -44,6 +48,17 @@ public class Superstructure extends SubsystemBase {
 
     /** Fraction of the tipping acceleration the drive may use. */
     static final double TIP_SAFETY = 0.8; // PLACEHOLDER(tuning)
+
+    /** How far the wrist and carriage may be from the climb pose with the fork moving. */
+    static final double CLIMB_CLEAR_DEG = 8;
+
+    static final double CLIMB_CLEAR_IN = 1.0;
+
+    /** An algae held when the climb starts is dropped: pushed out with the carriage below this. */
+    static final double CLIMB_DROP_MAX_IN = 5;
+
+    /** After pushing this long the algae is taken to be gone, whatever its sensor says. */
+    static final double CLIMB_DROP_S = 1.0;
 
     private static final double STANDARD_G = 9.80665;
 
@@ -62,6 +77,10 @@ public class Superstructure extends SubsystemBase {
     /** Wrist angle frozen while the elevator is un-homed, or NaN. */
     private double heldWristDeg = Double.NaN;
     private Targets target = new Targets(0, Pose.STOW.wristDeg);
+    /** True once the climber is committed: the mechanism stays in the climb pose. */
+    private BooleanSupplier climbLock = () -> false;
+
+    private double climbDropStartS = Double.NaN;
 
     public Superstructure(Elevator elevator, Wrist wrist, CoralRollers coral, AlgaeClaw claw) {
         this.elevator = elevator;
@@ -70,8 +89,19 @@ public class Superstructure extends SubsystemBase {
         this.claw = claw;
     }
 
-    /** Choose what the mechanism should do. Changing it clears a pending release. */
+    /** Hold the mechanism in {@link Wanted#CLIMB}, whatever else is asked for, while {@code lock} is true. */
+    public void setClimbLock(BooleanSupplier lock) {
+        climbLock = lock;
+    }
+
+    /**
+     * Choose what the mechanism should do. Changing it clears a pending release. Ignored once the
+     * climber is committed.
+     */
     public void setWanted(Wanted w) {
+        if (climbLock.getAsBoolean()) {
+            w = Wanted.CLIMB;
+        }
         if (w != wanted) {
             releaseRequested = false;
             releasing = false;
@@ -108,6 +138,7 @@ public class Superstructure extends SubsystemBase {
             case ALGAE_HIGH -> Pose.ALGAE_HIGH;
             case NET -> Pose.NET;
             case PROCESSOR -> Pose.PROCESSOR;
+            case CLIMB -> Pose.CLIMB;
         };
     }
 
@@ -119,6 +150,20 @@ public class Superstructure extends SubsystemBase {
         Pose p = pose();
         return Math.abs(elevator.carriageIn() - p.carriageIn) <= Setpoints.CARRIAGE_TOL_IN
                 && Math.abs(wrist.wristDeg() - p.wristDeg) <= Setpoints.WRIST_TOL_DEG;
+    }
+
+    /** True in the climb pose itself: the funnel may be opened. */
+    public boolean atClimbPose() {
+        return wanted == Wanted.CLIMB && atPose();
+    }
+
+    /** True while the mechanism is close enough to the climb pose for the fork to move. */
+    public boolean clearOfClimber() {
+        return wanted == Wanted.CLIMB
+                && elevator.isHomed()
+                && wristUsable()
+                && Math.abs(elevator.carriageIn() - Pose.CLIMB.carriageIn) <= CLIMB_CLEAR_IN
+                && Math.abs(wrist.wristDeg() - Pose.CLIMB.wristDeg) <= CLIMB_CLEAR_DEG;
     }
 
     /** True once a requested release has actually started at the pose (the rollers are pushing). */
@@ -193,6 +238,12 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (climbLock.getAsBoolean()) {
+            setWanted(Wanted.CLIMB);
+        }
+        if (wanted != Wanted.CLIMB) {
+            climbDropStartS = Double.NaN;
+        }
         Pose p = pose();
         moveAxes(p);
         runRollers();
@@ -241,9 +292,27 @@ public class Superstructure extends SubsystemBase {
                 wrist.wristDeg(),
                 wrist.velocityDegPerS(),
                 new Targets(p.carriageIn, p.wristDeg),
-                claw.mayHaveAlgae());
+                claw.mayHaveAlgae() && !climbDropDone());
         elevator.setGoalIn(target.carriageIn());
         wrist.setGoalDeg(target.wristDeg());
+    }
+
+    private boolean climbDropDone() {
+        return !Double.isNaN(climbDropStartS) && Timer.getFPGATimestamp() - climbDropStartS >= CLIMB_DROP_S;
+    }
+
+    /** The climb pose is below the angle an algae can be carried at, so it has to go first. */
+    private boolean droppingAlgaeToClimb() {
+        if (wanted != Wanted.CLIMB || !claw.mayHaveAlgae() || climbDropDone()) {
+            return false;
+        }
+        if (!elevator.isHomed() || elevator.carriageIn() > CLIMB_DROP_MAX_IN) {
+            return false;
+        }
+        if (Double.isNaN(climbDropStartS)) {
+            climbDropStartS = Timer.getFPGATimestamp();
+        }
+        return true;
     }
 
     private void runRollers() {
@@ -251,7 +320,7 @@ public class Superstructure extends SubsystemBase {
             releasing = true;
         }
         boolean coralRelease = releasing && releasesCoral(wanted);
-        boolean algaeRelease = releasing && releasesAlgae(wanted);
+        boolean algaeRelease = (releasing && releasesAlgae(wanted)) || droppingAlgaeToClimb();
 
         if (coralRelease) {
             coral.eject();

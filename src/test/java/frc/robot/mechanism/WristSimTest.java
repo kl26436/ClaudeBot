@@ -143,7 +143,7 @@ class WristSimTest {
         }
     }
 
-    /** The motor's closed-loop angle disagrees with the absolute encoder, as when its remote frames go stale. */
+    /** The motor's angle disagrees with the absolute encoder and does not take a seed. */
     private static final class DisagreeingIO implements WristIO {
         int targetsSent = 0;
 
@@ -175,6 +175,102 @@ class WristSimTest {
             assertTrue(AlertProbe.active(ENCODER_ALERT));
         } finally {
             suspect.close();
+        }
+    }
+
+    /** A motor whose position is a plain number the test sets, and which takes seeds. */
+    private static final class SeedableIO implements WristIO {
+        double wristDeg = 0;
+        double absoluteDeg = -90;
+        double velocityDegPerS = 0;
+        boolean reset = false;
+        int seeds = 0;
+        int targetsSent = 0;
+
+        @Override
+        public void updateInputs(WristIOInputs in) {
+            in.connected = true;
+            in.encoderConnected = true;
+            in.wristDeg = wristDeg;
+            in.absoluteDeg = absoluteDeg;
+            in.velocityDegPerS = velocityDegPerS;
+            in.resetOccurred = reset;
+            reset = false;
+        }
+
+        @Override
+        public void seed(double deg) {
+            seeds++;
+            wristDeg = deg;
+        }
+
+        @Override
+        public void setTargetDeg(double deg) {
+            targetsSent++;
+        }
+    }
+
+    @Test
+    void theMotorIsSeededFromTheEncoderAtStartUp() {
+        var io = new SeedableIO(); // a freshly powered motor reads 0 wherever the wrist is
+        var w = new Wrist(io);
+        try {
+            w.setGoalDeg(-90);
+            w.periodic();
+            assertEquals(0, io.targetsSent, "no motion on the loop the motor still reads a wrong angle");
+            w.periodic();
+            assertEquals(1, io.seeds);
+            assertEquals(-90, w.wristDeg(), 1e-9);
+            assertTrue(w.isTrusted());
+        } finally {
+            w.close();
+        }
+    }
+
+    @Test
+    void aMotorRebootIsDistrustedAtOnceAndReseeded() {
+        var io = new SeedableIO();
+        var w = new Wrist(io);
+        try {
+            w.setGoalDeg(30);
+            w.periodic();
+            w.periodic();
+            io.absoluteDeg = 30;
+            io.wristDeg = 0; // rebooted: the rotor count starts over
+            io.reset = true;
+            int sent = io.targetsSent;
+            w.periodic();
+            assertFalse(w.isTrusted(), "no debounce for a reboot");
+            assertEquals(sent, io.targetsSent);
+            w.periodic();
+            assertEquals(30, w.wristDeg(), 1e-9);
+            assertTrue(w.isTrusted());
+        } finally {
+            w.close();
+        }
+    }
+
+    @Test
+    void aSmallOffsetIsTakenOutOnlyWhileTheWristIsStill() {
+        var io = new SeedableIO();
+        var w = new Wrist(io); // registered with the scheduler, so the harness runs its periodic
+        try {
+            SimHarness.run(0.1);
+            assertEquals(1, io.seeds);
+            io.velocityDegPerS = 100;
+            io.wristDeg = -88; // 2 degrees of chain slack
+            SimHarness.run(0.6);
+            assertEquals(1, io.seeds, "moving: the two readings are from different instants");
+            io.velocityDegPerS = 0;
+            SimHarness.run(0.6);
+            assertEquals(2, io.seeds);
+            assertEquals(-90, w.wristDeg(), 1e-9);
+            io.wristDeg = -80; // 10 degrees is a fault, not slack
+            SimHarness.run(0.6);
+            assertEquals(2, io.seeds);
+            assertFalse(w.isTrusted());
+        } finally {
+            w.close();
         }
     }
 

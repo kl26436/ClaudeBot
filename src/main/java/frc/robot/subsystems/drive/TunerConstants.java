@@ -44,10 +44,8 @@ public final class TunerConstants {
             .withKS(0) // PLACEHOLDER(tuning)
             .withKV(0.124); // PLACEHOLDER(tuning)
 
-    /** Drive stator current at which the wheels start to slip. Find it on carpet with CTRE's slip test. */
-    private static final double SLIP_CURRENT_A = 120; // PLACEHOLDER(tuning)
-
-    private static final double STEER_STATOR_LIMIT_A = 60; // PLACEHOLDER(tuning)
+    /** Drive stator limit. Raise it toward the slip current found on carpet with CTRE's slip test. */
+    private static final double SLIP_CURRENT_A = DriveK.DRIVE_STATOR_LIMIT_A; // PLACEHOLDER(tuning)
 
     // MK4i: drive motors on the right side, and every steer motor, run inverted.
     private static final boolean LEFT_DRIVE_INVERTED = false;
@@ -76,7 +74,7 @@ public final class TunerConstants {
 
     private static SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> factory() {
         var steerInitial = new TalonFXConfiguration().withCurrentLimits(new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(STEER_STATOR_LIMIT_A)
+                .withStatorCurrentLimit(DriveK.STEER_STATOR_LIMIT_A)
                 .withStatorCurrentLimitEnable(true));
         return new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
                 .withDriveMotorGearRatio(DriveK.DRIVE_RATIO)

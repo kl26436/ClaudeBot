@@ -11,6 +11,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.config.RobotConstants.ClimberK;
 import frc.robot.config.RobotConstants.ElevatorK;
 import frc.robot.config.RobotConstants.WristK;
 import frc.robot.field.Reef;
@@ -19,6 +20,7 @@ import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.Wanted;
 import frc.robot.subsystems.claw.AlgaeClaw;
 import frc.robot.subsystems.claw.AlgaeClawIOSim;
+import frc.robot.subsystems.climber.ClimberIOSim;
 import frc.robot.subsystems.coral.CoralRollers;
 import frc.robot.subsystems.coral.CoralRollersIOSim;
 import frc.robot.subsystems.drive.SwerveIOSim;
@@ -71,6 +73,7 @@ public class SimulatedRobot extends SubsystemBase {
     private final WristIOSim wrist;
     private final CoralRollersIOSim coralIo;
     private final AlgaeClawIOSim clawIo;
+    private final ClimberIOSim climber;
     private final Superstructure superstructure;
     private final CoralRollers coral;
     private final AlgaeClaw claw;
@@ -99,6 +102,7 @@ public class SimulatedRobot extends SubsystemBase {
             WristIOSim wrist,
             CoralRollersIOSim coralIo,
             AlgaeClawIOSim clawIo,
+            ClimberIOSim climber,
             Superstructure superstructure,
             CoralRollers coral,
             AlgaeClaw claw) {
@@ -107,6 +111,7 @@ public class SimulatedRobot extends SubsystemBase {
         this.wrist = wrist;
         this.coralIo = coralIo;
         this.clawIo = clawIo;
+        this.climber = climber;
         this.superstructure = superstructure;
         this.coral = coral;
         this.claw = claw;
@@ -120,6 +125,7 @@ public class SimulatedRobot extends SubsystemBase {
         wrist.simulate(dt);
         coralIo.simulate(dt);
         clawIo.simulate(dt);
+        climber.simulate(dt);
         trackMode();
         humanPlayer();
         coralRelease();
@@ -320,6 +326,21 @@ public class SimulatedRobot extends SubsystemBase {
         setAlgae(true);
     }
 
+    /** Hang the robot on the cage, or let it go. */
+    public synchronized void setCageCaptured(boolean captured) {
+        climber.setCageCaptured(captured);
+    }
+
+    /** Where the climber fork really is: 90 stowed, 0 level. */
+    public synchronized double trueForkDeg() {
+        return climber.trueForkDeg();
+    }
+
+    /** How far the funnel tray has swung open, 0 to 90. */
+    public synchronized double trayDeg() {
+        return climber.trayDeg();
+    }
+
     /** Every coral scored, in order, each branch and level once. */
     public synchronized List<ScoreJudge.CoralScore> coralScored() {
         return List.copyOf(coralScored);
@@ -344,8 +365,9 @@ public class SimulatedRobot extends SubsystemBase {
     }
 
     /**
-     * Stage A, stage B, carriage and wrist, in the robot frame, for AdvantageScope's model. The
-     * stages rise a third and two thirds as far as the carriage; the wrist turns about its pivot.
+     * Stage A, stage B, carriage, wrist, climber fork and funnel tray, in the robot frame, for
+     * AdvantageScope's model. The stages rise a third and two thirds as far as the carriage; the wrist
+     * (drawn level), the fork (drawn stowed) and the tray (drawn closed) turn about their pivots.
      */
     public synchronized Pose3d[] componentPoses() {
         double h = Units.inchesToMeters(elevator.trueCarriageIn());
@@ -359,6 +381,16 @@ public class SimulatedRobot extends SubsystemBase {
                     0,
                     Units.inchesToMeters(ElevatorK.PIVOT_REST_HEIGHT_IN) + h,
                     new Rotation3d(0, pitch, 0)),
+            new Pose3d(
+                    Units.inchesToMeters(ClimberK.PIVOT_X_IN),
+                    0,
+                    Units.inchesToMeters(ClimberK.PIVOT_Z_IN),
+                    new Rotation3d(0, Math.toRadians(climber.trueForkDeg() - ClimberK.STOWED_DEG), 0)),
+            new Pose3d(
+                    0,
+                    Units.inchesToMeters(ClimberK.TRAY_HINGE_Y_IN),
+                    Units.inchesToMeters(ClimberK.TRAY_HINGE_Z_IN),
+                    new Rotation3d(Math.toRadians(climber.trayDeg()), 0, 0)),
         };
     }
 
@@ -415,5 +447,6 @@ public class SimulatedRobot extends SubsystemBase {
         Logger.recordOutput("Sim/Algae", algaePoses());
         Logger.recordOutput("Sim/Score/Coral", coralScored.size());
         Logger.recordOutput("Sim/Score/Net", algaeInNet);
+        Logger.recordOutput("Sim/ForkDeg", climber.trueForkDeg());
     }
 }

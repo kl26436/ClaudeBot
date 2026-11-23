@@ -21,7 +21,7 @@ public class AlgaeClawIOSim extends AlgaeClawIOTalonFX {
     static final double RANGE_WITH_ALGAE_M = 0.03;
     static final double RANGE_EMPTY_M = 0.45;
 
-    private static final DCMotor GEARBOX = DCMotor.getKrakenX60Foc(1);
+    private static final DCMotor GEARBOX = DCMotor.getKrakenX44Foc(1);
 
     private final TalonFXSimState frontSim;
     private final TalonFXSimState rearSim;
@@ -35,6 +35,8 @@ public class AlgaeClawIOSim extends AlgaeClawIOTalonFX {
         super(Ports.CLAW_FRONT, Ports.CLAW_REAR, Ports.ALGAE_RANGE);
         frontSim = front.getSimState();
         rearSim = rear.getSimState();
+        frontSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
+        rearSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
         rangeSim = range.getSimState();
         write();
     }

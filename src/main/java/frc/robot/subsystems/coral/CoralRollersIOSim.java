@@ -23,7 +23,7 @@ public class CoralRollersIOSim extends CoralRollersIOTalonFX {
 
     static final double RANGE_EMPTY_M = 0.30;
 
-    private static final DCMotor GEARBOX = DCMotor.getKrakenX60Foc(1);
+    private static final DCMotor GEARBOX = DCMotor.getKrakenX44Foc(1);
 
     private final TalonFXSimState motorSim;
     private final CANrangeSimState rangeSim;
@@ -35,6 +35,7 @@ public class CoralRollersIOSim extends CoralRollersIOTalonFX {
     public CoralRollersIOSim() {
         super(Ports.CORAL_ROLLERS, Ports.CORAL_RANGE);
         motorSim = motor.getSimState();
+        motorSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
         rangeSim = range.getSimState();
         write();
     }

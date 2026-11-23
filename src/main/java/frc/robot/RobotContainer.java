@@ -7,7 +7,9 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.autos.AutoChooser;
+import frc.robot.commands.ClimbCommands;
 import frc.robot.commands.ScoreCommands;
 import frc.robot.config.Ports;
 import frc.robot.config.RobotConstants;
@@ -20,6 +22,10 @@ import frc.robot.subsystems.claw.AlgaeClaw;
 import frc.robot.subsystems.claw.AlgaeClawIO;
 import frc.robot.subsystems.claw.AlgaeClawIOSim;
 import frc.robot.subsystems.claw.AlgaeClawIOTalonFX;
+import frc.robot.subsystems.climber.Climber;
+import frc.robot.subsystems.climber.ClimberIO;
+import frc.robot.subsystems.climber.ClimberIOSim;
+import frc.robot.subsystems.climber.ClimberIOTalonFX;
 import frc.robot.subsystems.coral.CoralRollers;
 import frc.robot.subsystems.coral.CoralRollersIO;
 import frc.robot.subsystems.coral.CoralRollersIOSim;
@@ -63,6 +69,7 @@ public class RobotContainer {
     private final CoralRollers coral;
     private final AlgaeClaw claw;
     private final Superstructure superstructure;
+    private final Climber climber;
     private final Vision vision;
     private final SimulatedRobot sim;
     private final AutoChooser autoChooser;
@@ -75,20 +82,24 @@ public class RobotContainer {
         WristIO wristIo;
         CoralRollersIO coralIo;
         AlgaeClawIO clawIo;
+        ClimberIO climberIo;
         VisionIO visionIo;
         SwerveIOSim driveSim = null;
         ElevatorIOSim elevatorSim = null;
         WristIOSim wristSim = null;
         CoralRollersIOSim coralSim = null;
         AlgaeClawIOSim clawSim = null;
+        ClimberIOSim climberSim = null;
 
         switch (RobotConstants.currentMode()) {
             case REAL -> {
                 driveIo = keep(new SwerveIOCTRE());
                 elevatorIo = keep(new ElevatorIOTalonFX(Ports.ELEVATOR_LEFT, Ports.ELEVATOR_RIGHT, Ports.ELEVATOR_HOME_DIO));
-                wristIo = keep(new WristIOTalonFX(Ports.WRIST, Ports.WRIST_CANDI));
+                wristIo = keep(new WristIOTalonFX(Ports.WRIST, Ports.WRIST_ENCODER_DIO));
                 coralIo = keep(new CoralRollersIOTalonFX(Ports.CORAL_ROLLERS, Ports.CORAL_RANGE));
                 clawIo = keep(new AlgaeClawIOTalonFX(Ports.CLAW_FRONT, Ports.CLAW_REAR, Ports.ALGAE_RANGE));
+                climberIo = keep(new ClimberIOTalonFX(
+                        Ports.CLIMBER_LEFT, Ports.CLIMBER_RIGHT, Ports.CLIMBER_PAWL_PWM, Ports.FUNNEL_LATCH_PWM));
                 visionIo = new VisionIOLimelight(LIMELIGHT_NAME);
             }
             case SIM -> {
@@ -97,11 +108,13 @@ public class RobotContainer {
                 wristSim = keep(new WristIOSim());
                 coralSim = keep(new CoralRollersIOSim());
                 clawSim = keep(new AlgaeClawIOSim());
+                climberSim = keep(new ClimberIOSim());
                 driveIo = driveSim;
                 elevatorIo = elevatorSim;
                 wristIo = wristSim;
                 coralIo = coralSim;
                 clawIo = clawSim;
+                climberIo = climberSim;
                 visionIo = new VisionIOSim(driveSim::truePose, CameraModel.limelight4());
             }
             default -> {
@@ -111,6 +124,7 @@ public class RobotContainer {
                 wristIo = new WristIO() {};
                 coralIo = new CoralRollersIO() {};
                 clawIo = new AlgaeClawIO() {};
+                climberIo = new ClimberIO() {};
                 visionIo = new VisionIO() {};
             }
         }
@@ -121,10 +135,13 @@ public class RobotContainer {
         coral = new CoralRollers(coralIo);
         claw = new AlgaeClaw(clawIo);
         superstructure = new Superstructure(elevator, wrist, coral, claw);
+        climber = new Climber(climberIo, superstructure::atClimbPose, superstructure::clearOfClimber);
+        superstructure.setClimbLock(climber::committed);
         vision = new Vision(visionIo, drive);
         sim = driveSim == null
                 ? null
-                : new SimulatedRobot(driveSim, elevatorSim, wristSim, coralSim, clawSim, superstructure, coral, claw);
+                : new SimulatedRobot(
+                        driveSim, elevatorSim, wristSim, coralSim, clawSim, climberSim, superstructure, coral, claw);
 
         drive.setSpeedScaleSource(superstructure::driveSpeedScale);
         drive.setAccelLimitSource(superstructure::driveAccelLimitMps2);
@@ -157,17 +174,20 @@ public class RobotContainer {
         controller.b().onTrue(Commands.runOnce(() -> RobotState.get().selectLevel(Wanted.L2)));
         controller.a().onTrue(Commands.runOnce(() -> RobotState.get().selectLevel(Wanted.L1)));
 
-        controller.rightTrigger().whileTrue(scoreOnNearestFace(false));
-        controller.leftTrigger().whileTrue(scoreOnNearestFace(true));
-        controller.rightBumper().whileTrue(ScoreCommands.stationPickup(
+        // Once the funnel is open for the climb the mechanism stays put, so these do nothing.
+        Trigger playing = new Trigger(() -> !climber.committed());
+        controller.rightTrigger().and(playing).whileTrue(scoreOnNearestFace(false));
+        controller.leftTrigger().and(playing).whileTrue(scoreOnNearestFace(true));
+        controller.rightBumper().and(playing).whileTrue(ScoreCommands.stationPickup(
                 this,
                 () -> Station.nearest(allianceOrBlue(), drive.pose().getTranslation()),
                 TELEOP_ALIGN_SPEED_MPS,
                 true));
-        controller.leftBumper().whileTrue(ScoreCommands.algaeFromReef(
+        controller.leftBumper().and(playing).whileTrue(ScoreCommands.algaeFromReef(
                 this, () -> Reef.nearestFace(allianceOrBlue(), drive.pose().getTranslation())));
-        controller.povUp().onTrue(ScoreCommands.netScore(this));
-        controller.povDown().onTrue(ScoreCommands.processorScore(this));
+        controller.povUp().and(playing).onTrue(ScoreCommands.netScore(this));
+        controller.povDown().and(playing).onTrue(ScoreCommands.processorScore(this));
+        controller.povRight().whileTrue(ClimbCommands.climb(this));
         controller.back().onTrue(Commands.runOnce(() -> superstructure.setWanted(Wanted.STOW), superstructure, drive));
         controller.start().onTrue(Commands.runOnce(this::resetHeading));
     }
@@ -223,6 +243,10 @@ public class RobotContainer {
         return claw;
     }
 
+    public Climber climber() {
+        return climber;
+    }
+
     public AutoChooser autoChooser() {
         return autoChooser;
     }
@@ -239,6 +263,7 @@ public class RobotContainer {
         wrist.close();
         coral.close();
         claw.close();
+        climber.close();
         for (var c : closeables) {
             try {
                 c.close();

@@ -11,8 +11,11 @@ import frc.robot.config.Setpoints;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Wrist joint. It only moves while its absolute encoder can be trusted: connected, and reading an
- * angle the mechanism can physically reach. Until a goal is set it holds in brake.
+ * Wrist joint. The motor controller closes its loop on its own rotor, seeded from the absolute
+ * encoder on the pivot: at start-up, after the controller reboots, and when a little chain slack has
+ * built up on a wrist that is holding still. It only moves while the encoder can be trusted:
+ * connected, reading an angle the mechanism can physically reach, and agreeing with the motor. Until
+ * a goal is set it holds in brake.
  */
 public class Wrist extends SubsystemBase {
     /** Outside this range the encoder is reading something the hard stops make impossible. */
@@ -22,16 +25,23 @@ public class Wrist extends SubsystemBase {
 
     /**
      * The motor's closed-loop angle and the absolute encoder must agree this closely. A lasting gap
-     * means the motor has lost its remote sensor and is closing the loop on a wrong angle.
+     * means the chain has slipped or the encoder has moved on its shaft.
      */
     private static final double MAX_DISAGREEMENT_DEG = 5;
 
     /**
-     * How long a disagreement must last to count. The two readings arrive in separate frames a few
-     * milliseconds apart, so mid-move under a busy bus they can briefly differ by more than the limit.
+     * How long a disagreement must last to count. The motor's reading comes over CAN a few milliseconds
+     * behind the encoder's, so mid-move the two can briefly differ by more than the limit.
      */
     private static final double DISAGREEMENT_DEBOUNCE_S = 0.1;
 
+    /** A gap above this, on a wrist that has been still for {@link #STILL_S}, is taken out by seeding again. */
+    private static final double RESEED_DEG = 0.5; // PLACEHOLDER(tuning)
+
+    private static final double STILL_DEG_PER_S = 2;
+    private static final double STILL_S = 0.25;
+
+    private final Debouncer stillOffset = new Debouncer(STILL_S, DebounceType.kRising);
     private final Debouncer disagreement = new Debouncer(DISAGREEMENT_DEBOUNCE_S, DebounceType.kRising);
     private final WristIO io;
     private final WristIOInputsAutoLogged inputs = new WristIOInputsAutoLogged();
@@ -39,6 +49,10 @@ public class Wrist extends SubsystemBase {
 
     private double goalDeg = Double.NaN;
     private boolean trusted = false;
+    /** True from start-up or a motor reboot until the motor has taken the encoder's angle. */
+    private boolean seeding = true;
+
+    private boolean seedSent = false;
 
     public Wrist(WristIO io) {
         this.io = io;
@@ -77,13 +91,27 @@ public class Wrist extends SubsystemBase {
         io.updateInputs(inputs);
         Logger.processInputs("Wrist", inputs);
 
-        // Fed every loop, so the debounce timing does not depend on the other checks.
-        boolean disagrees = disagreement.calculate(
-                !(Math.abs(inputs.wristDeg - inputs.absoluteDeg) <= MAX_DISAGREEMENT_DEG)); // NaN disagrees
-        trusted = inputs.encoderConnected
+        boolean encoderOk = inputs.encoderConnected
                 && inputs.absoluteDeg >= TRUST_MIN_DEG
-                && inputs.absoluteDeg <= TRUST_MAX_DEG
-                && !disagrees;
+                && inputs.absoluteDeg <= TRUST_MAX_DEG;
+        double gap = Math.abs(inputs.wristDeg - inputs.absoluteDeg);
+        boolean agrees = gap <= MAX_DISAGREEMENT_DEG; // NaN disagrees
+        if (inputs.resetOccurred) {
+            seeding = true;
+            seedSent = false;
+        }
+        if (seeding && seedSent && agrees) {
+            seeding = false;
+        }
+        // Both are fed every loop, so the debounce timing does not depend on the other checks.
+        boolean slack = stillOffset.calculate(
+                agrees && gap > RESEED_DEG && Math.abs(inputs.velocityDegPerS) < STILL_DEG_PER_S);
+        boolean disagrees = disagreement.calculate(!agrees);
+        if (inputs.connected && encoderOk && (seeding || slack)) {
+            io.seed(inputs.absoluteDeg);
+            seedSent = true;
+        }
+        trusted = encoderOk && !seeding && !disagrees;
         encoderAlert.set(!trusted);
 
         if (trusted && !Double.isNaN(goalDeg)) {

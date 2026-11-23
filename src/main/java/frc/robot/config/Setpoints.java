@@ -6,16 +6,19 @@ public final class Setpoints {
 
     public enum Pose {
         STOW(0, -90),
-        STATION(1.75, -30), // PLACEHOLDER(drawing) PLACEHOLDER(funnel-redesign)
+        STATION(1.25, -35),
         L1(5, -35), // PLACEHOLDER(drawing)
-        L2(17.5, -35), // PLACEHOLDER(funnel-redesign)
+        L2(17.5, -35),
         L3(33.3, -35),
+        // Drawn at 66 in, -53: the soft limit stops 0.75 in short, and -52 points at the same branch tip.
         L4(65.25, -52),
         ALGAE_LOW(8.8, 46),
         ALGAE_HIGH(24.6, 46),
-        ALGAE_CARRY(1.75, 45),
+        ALGAE_CARRY(1.25, 45),
+        // Drawn at 66 in; 0.75 in lower leaves about 3.1 in over an 88.9 in rim.
         NET(65.25, 75),
-        PROCESSOR(1.75, 15); // PLACEHOLDER(drawing)
+        PROCESSOR(1.25, 15), // PLACEHOLDER(robot-check) marked marginal on the drawings
+        CLIMB(1.25, 0);
 
         public final double carriageIn;
         public final double wristDeg;

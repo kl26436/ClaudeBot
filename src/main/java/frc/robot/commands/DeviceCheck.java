@@ -2,7 +2,6 @@ package frc.robot.commands;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.CANdi;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.Pigeon2;
@@ -89,7 +88,6 @@ public final class DeviceCheck {
             case "TalonFX" -> new TalonFX(id, bus);
             case "CANcoder" -> new CANcoder(id, bus);
             case "Pigeon2" -> new Pigeon2(id, bus);
-            case "CANdi" -> new CANdi(id, bus);
             case "CANrange" -> new CANrange(id, bus);
             default -> throw new IllegalArgumentException("no probe for a " + d.kind() + ": " + d.name());
         };

@@ -20,11 +20,26 @@ public final class KeepOut {
     private static final double STOW_DEG = -90.0;
     private static final double EPS = 1e-9;
 
-    /** Contiguous, ordered zones. The last zone includes its top. */
+    /**
+     * Where the wrist leaves and returns to stow. Drawing R-001 allows only stow below 1.25 in and only
+     * -75 or higher above it; every angle is clear at 1.25 itself. The band around it was measured on
+     * the rev3 assembly: from 0.75 to 2.0 in every angle from -90 to +75 clears the fixed parts by about
+     * a third of an inch or more. Below it the claw meets the lift gearbox and the camera tower, and from about 2.5 in up a
+     * stowed claw meets the climber fork. Check the band on the robot by hand first.
+     */
+    public static final double UNSTOW_IN = 1.25;
+
+    public static final double UNSTOW_MIN_IN = 0.75; // PLACEHOLDER(robot-check)
+    public static final double UNSTOW_MAX_IN = 1.75; // PLACEHOLDER(robot-check)
+
+    /** Contiguous, ordered zones (drawing R-001, rev3). The last zone includes its top. */
     public static final List<Zone> ZONES = List.of(
-            new Zone(0, 1.25, -90, -90), // stow only
-            new Zone(1.25, 6, -90, 75),
-            new Zone(6, 23, -38, 75), // PLACEHOLDER(funnel-redesign) Rev A gave -35
+            new Zone(0, UNSTOW_MIN_IN, -90, -90), // stow only
+            new Zone(UNSTOW_MIN_IN, UNSTOW_MAX_IN, -90, 75), // the unstow band
+            new Zone(UNSTOW_MAX_IN, 7, -75, 75),
+            new Zone(7, 9, -60, 75),
+            new Zone(9, 15, -45, 75),
+            new Zone(15, 23, -40, 75),
             new Zone(23, 65.25, -90, 75));
 
     private static final double TOP_IN = ZONES.get(ZONES.size() - 1).maxCarriageIn();

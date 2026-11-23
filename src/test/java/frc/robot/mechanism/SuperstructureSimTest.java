@@ -275,7 +275,7 @@ class SuperstructureSimTest {
         s.setWanted(Wanted.STOW);
         SimHarness.run(2.5);
         assertTrue(wrist.wristDeg() >= 10);
-        assertTrue(elevator.carriageIn() >= 1.25);
+        assertTrue(elevator.carriageIn() >= frc.robot.config.KeepOut.UNSTOW_MIN_IN);
         assertTrue(wristSim.trueWristDeg() >= 10);
         assertTrue(s.atPose(), "carry is the stow pose while holding an algae");
     }
@@ -292,7 +292,7 @@ class SuperstructureSimTest {
         runChecking(2.5, () -> assertTrue(wristSim.trueWristDeg() >= 10 - 1.5,
                 "an algae aboard must keep the wrist at +10 or higher, at " + wristSim.trueWristDeg()));
         assertTrue(s.atPose(), "stow with an algae is the carry pose");
-        assertTrue(elevator.carriageIn() >= 1.25);
+        assertTrue(elevator.carriageIn() >= frc.robot.config.KeepOut.UNSTOW_MIN_IN);
         assertFalse(claw.isEjecting());
     }
 

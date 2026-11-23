@@ -19,7 +19,7 @@ class StationTest {
             var pick = Station.pickupPose(a, s);
             assertEquals(0, pick.getRotation().minus(tag.getRotation()).getRadians(), 1e-9, "heading equals tag heading");
             var rel = pick.relativeTo(tag);
-            assertEquals(Units.inchesToMeters(17.4), rel.getX(), 1e-6);
+            assertEquals(Units.inchesToMeters(17.25), rel.getX(), 1e-6);
             assertEquals(0, rel.getY(), 1e-6);
         }
         assertPoseEquals(AllianceFlip.rotate(Station.pickupPose(Alliance.Blue, Station.Side.RIGHT)), Station.pickupPose(Alliance.Red, Station.Side.RIGHT), 1e-3);

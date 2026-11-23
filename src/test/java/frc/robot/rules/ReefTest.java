@@ -23,7 +23,7 @@ class ReefTest {
         for (var a : Alliance.values()) for (var b : Reef.Branch.values()) {
             var tag = Reef.tagPose(a, b.face()); var robot = Reef.scoringPose(a, b);
             var rel = robot.relativeTo(tag);
-            assertEquals(Units.inchesToMeters(17.4), rel.getX(), 1e-6);
+            assertEquals(Units.inchesToMeters(17.25), rel.getX(), 1e-6);
             assertEquals(Units.inchesToMeters(6.47), Math.abs(rel.getY()), 1e-6);
             assertEquals(180, Math.abs(rel.getRotation().getDegrees()), 1e-6);
         }
@@ -63,7 +63,7 @@ class ReefTest {
     @Test void algaeFacesAndHeights() {
         for (int f = 0; f < 6; f++) {
             var rel = Reef.algaePose(Alliance.Blue, f).relativeTo(Reef.tagPose(Alliance.Blue, f));
-            assertEquals(Units.inchesToMeters(17.9), rel.getX(), 1e-6);
+            assertEquals(Units.inchesToMeters(17.75), rel.getX(), 1e-6);
             assertEquals(0, rel.getY(), 1e-6);
             assertEquals(f % 2 == 0, Reef.algaeIsHigh(f));
         }

@@ -34,9 +34,9 @@ public final class ScoreJudge {
     record BranchPoint(Wanted level, double forwardIn, double upIn) {}
 
     static final BranchPoint[] BRANCH_POINTS = {
-        new BranchPoint(Wanted.L2, 19.025, 31.875),
-        new BranchPoint(Wanted.L3, 19.025, 47.625),
-        new BranchPoint(Wanted.L4, 18.525, 72.0),
+        new BranchPoint(Wanted.L2, DriveK.BUMPER_FACE_FROM_CENTRE_IN + 1.625, 31.875),
+        new BranchPoint(Wanted.L3, DriveK.BUMPER_FACE_FROM_CENTRE_IN + 1.625, 47.625),
+        new BranchPoint(Wanted.L4, DriveK.BUMPER_FACE_FROM_CENTRE_IN + 1.125, 72.0),
     };
 
     /** How far the front bumper may be from the net line, and the heading tolerance for a net shot. */

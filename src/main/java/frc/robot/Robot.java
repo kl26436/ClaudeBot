@@ -1,3 +1,5 @@
+// Logging setup adapted from AdvantageKit's template projects, Copyright (c) 2021-2026 Littleton Robotics
+// (BSD license; see NOTICE).
 package frc.robot;
 
 import edu.wpi.first.wpilibj.Alert;

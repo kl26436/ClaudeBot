@@ -1,24 +1,54 @@
-This project adapts parts of Team 2910's public 2025 and 2026 robot code (FIRST Robotics Team 2910, MIT licence, reproduced below); files adapted from it carry an MIT notice header.
+ClaudeBot
+Copyright (c) 2026 Kevin LaPerriere
 
-MIT License
+ClaudeBot is released under the MIT License in LICENSE, except for the parts below, which belong to
+others and keep their own licenses. The full texts are in licenses/.
 
-Copyright (c) 2025 FIRST Robotics Team 2910
-Copyright (c) 2026 FIRST Robotics Team 2910
+1. FIRST Robotics Team 2910 (Jack in the Bot), MIT License
+   Copyright (c) 2025 FIRST Robotics Team 2910   licenses/Team2910-2025-MIT.txt
+   Copyright (c) 2026 FIRST Robotics Team 2910   licenses/Team2910-2026-MIT.txt
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Adapted from https://github.com/FRCTeam2910/2025CompetitionRobot-Public:
+     src/main/java/frc/robot/autos/Auto.java, AutoChooser.java, AutoFactory.java, AutoProgram.java
+   Adapted from https://github.com/FRCTeam2910/2026CompetitionRobot-Public:
+     src/main/java/frc/robot/subsystems/drive/SwerveIO.java, SwerveIOCTRE.java, SwerveIOSim.java,
+     SwerveSubsystem.java
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+   Each of these files carries a notice header.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Team 5516 "Iron Maple" and Shenzhen Robotics Alliance, maple-sim, MIT License
+   Copyright (c) 2024-2025 Team5516 "Iron Maple"   licenses/maple-sim-MIT.txt
+
+   SwerveIOSim.java puts maple-sim's physics under CTRE's simulated devices, by way of Team 2910's code.
+   https://github.com/Shenzhen-Robotics-Alliance/maple-sim
+
+3. Littleton Robotics (Team 6328, Mechanical Advantage), AdvantageKit, BSD License
+   Copyright (c) 2021-2026 Littleton Robotics. All rights reserved.   licenses/AdvantageKit-BSD.txt
+
+   The logging setup in src/main/java/frc/robot/Robot.java and the AdvantageKit lines of build.gradle come
+   from its template projects. https://github.com/Mechanical-Advantage/AdvantageKit
+
+4. WPILib, BSD License
+   Copyright (c) 2009-2026 FIRST and other WPILib contributors. All rights reserved.
+   licenses/WPILib-BSD.txt
+
+   build.gradle, settings.gradle and src/main/java/frc/robot/Main.java come from its project templates.
+   https://github.com/wpilibsuite
+
+5. Gradle wrapper, Apache License 2.0
+   Copyright (c) 2015 the original authors   licenses/Gradle-Apache-2.0.txt
+
+   gradlew, gradlew.bat and gradle/wrapper/gradle-wrapper.jar, unmodified.
+
+6. The 3D robot model, ascope/Robot_ClaudeBot/*.glb
+
+   Alongside this project's own design, the model contains simplified geometry from manufacturers' CAD
+   models of purchased parts, among them parts from AndyMark, CTR Electronics, NI, REV Robotics, Vivid-Hosting and
+   West Coast Products. That geometry belongs to its manufacturers and is not covered by the MIT License.
+
+7. Libraries downloaded by the build (WPILib, AdvantageKit, CTRE Phoenix 6, maple-sim and what they depend
+   on) are not part of this repository. Each comes under its own license. Phoenix 6 is not open source, and
+   its Pro features need a license from CTR Electronics.
+
+FIRST, FRC and REEFSCAPE are trademarks of FIRST. Product and company names belong to their owners. This
+project is not endorsed by any of them, or by the teams credited here.

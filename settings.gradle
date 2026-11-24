@@ -1,3 +1,4 @@
+// From the WPILib project template (BSD license; see NOTICE).
 import org.gradle.internal.os.OperatingSystem
 
 pluginManagement {

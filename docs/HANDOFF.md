@@ -7,7 +7,7 @@ decisions that override the plan's text, and what is still open.
 
 | Thing | Location |
 |---|---|
-| Code | this repository, branch `robot-a`. Nothing has been pushed anywhere. |
+| Code | this repository, branch `main`, shared publicly at https://github.com/kl26436/ClaudeBot. |
 | What the CAD asks of the code | `docs/cad/SOFTWARE_HANDOFF.md` (CAN map and joint list beside it). Newer than the design where they differ. |
 | Design | `docs/superpowers/specs/2026-11-21-claudebot-code-design.md`, exported from the Claude Doc "Robot A code design" (rev 36) |
 | Plan | `docs/superpowers/plans/2026-11-21-claudebot-code.md` (19 tasks, all done) |

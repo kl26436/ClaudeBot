@@ -1,3 +1,4 @@
+// Adapted from the WPILib and AdvantageKit project templates (BSD licenses; see NOTICE).
 import edu.wpi.first.gradlerio.GradleRIOPlugin
 import groovy.json.JsonSlurper
 

@@ -124,4 +124,25 @@ selection or the alliance changes.
 | `field/` | Reef, station, barge and start poses for both alliances |
 | `sim/` | The simulated robot and the score judge |
 
-Files adapted from Team 2910's public code carry a notice header; [NOTICE](NOTICE) has the licence.
+## Credits
+
+ClaudeBot builds on work other teams and projects share in the open. Thank you to:
+
+- **[FRC Team 2910, Jack in the Bot](https://github.com/FRCTeam2910).** The project follows their layout. The autos
+  (chooser, programs, legs) are adapted from their
+  [2025 robot code](https://github.com/FRCTeam2910/2025CompetitionRobot-Public), and the swerve drive and its simulation
+  from their [2026 robot code](https://github.com/FRCTeam2910/2026CompetitionRobot-Public). Drive-to-point and the
+  single-tag position fix use their methods, written fresh here.
+- **[FRC Team 5516, Iron Maple](https://github.com/Shenzhen-Robotics-Alliance/maple-sim)** and Shenzhen Robotics Alliance, for
+  maple-sim, the field physics in the simulator.
+- **[FRC Team 6328, Mechanical Advantage](https://github.com/Mechanical-Advantage)** (Littleton Robotics), for AdvantageKit and
+  AdvantageScope. The logging setup comes from AdvantageKit's templates.
+- **[WPILib](https://github.com/wpilibsuite)**, for the libraries, the simulator and the project template.
+- **[CTR Electronics](https://github.com/CrossTheRoadElec)**, for Phoenix 6. `TunerConstants` follows the shape Tuner X generates.
+
+The code was written with [Claude Code](https://claude.com/claude-code).
+
+## License
+
+[MIT](LICENSE), except for the parts that belong to others. [NOTICE](NOTICE) lists those file by file, with the full texts in
+[licenses/](licenses). Manufacturers' geometry in the 3D robot model is not covered by the MIT license.

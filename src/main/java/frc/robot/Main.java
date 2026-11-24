@@ -1,3 +1,4 @@
+// From the WPILib project template, Copyright (c) FIRST and other WPILib contributors (BSD license; see NOTICE).
 package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;

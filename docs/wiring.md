@@ -1,7 +1,7 @@
-# Robot A wiring map
+# ClaudeBot wiring map
 
-From the CAD package rev3 (2026-11-23), `docs/cad/robotA_can_map.csv`; step-by-step wiring is in the
-[Robot A build instructions](https://claude.ai/artifact/NBBpmCtf4Wyv4jgVFkgQrD), section 8. Every ID is
+From the CAD package rev3 (2026-11-23), `docs/cad/can_map.csv`; step-by-step wiring is in the
+[ClaudeBot build instructions](https://claude.ai/artifact/NBBpmCtf4Wyv4jgVFkgQrD), section 8. Every ID is
 declared once, in `src/main/java/frc/robot/config/Ports.java`, and `PortsTest` compares that file with the
 CAD list device by device. At start-up the robot calls every device in `Ports.all()` and raises a dashboard
 alert naming any that do not answer.

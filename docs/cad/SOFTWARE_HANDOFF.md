@@ -1,7 +1,7 @@
-# Robot A software handoff
+# ClaudeBot software handoff
 
 > Copy of the claude.ai doc "Robot A software handoff" (exported Nov 23, 2026), placed here so Claude Code can read it.
-> The two files it calls `lists/robotA_can_map.csv` and `lists/robotA_joints_and_limits.md` are in this folder.
+> The two files it calls `lists/robotA_can_map.csv` and `lists/robotA_joints_and_limits.md` are in this folder, as `can_map.csv` and `joints_and_limits.md`.
 > The claude.ai links below (code design, build instructions) open only in a browser signed in to claude.ai; Claude Code cannot read them.
 
 Nov 23, 2026 · @Kevin
@@ -15,19 +15,19 @@ Five items, most urgent first. The first two are open problems already in the co
 - [ ] **Wrist keep-out table and the unstow gap.** The code still uses the four-zone table; the CAD's six-zone table (below, in *Wrist keep-out rule*) is the one to use. Read literally it leaves no carriage height where the wrist may leave stow. The swept clash grid shows every wrist angle clear at exactly 1.25 in, so hold the carriage at 1.25 while the wrist leaves or returns to stow. Verify on the robot before trusting it.
 - [ ] **Elevator cruise speed.** Held at 65 in/s (design 110). At 110 in/s in the Phoenix simulator the Motion Magic reference does not slow down properly and the carriage hits the top stop. Untried fix: keep Phoenix in rotor rotations and convert to inches in the IO class.
 - [ ] **Climber and funnel latch.** Both are designed now and are not in the code yet: two winch motors, two pawl servos on one PWM, the latch servo, and the climb sequence below.
-- [ ] **AdvantageScope robot model (task 18).** The CAD is split by motion group (mast, stage A, stage B, carriage, wrist, climber fork, funnel tray), with every pivot and axis in `robotA_joints_and_limits.md`. The meshes behind the 3D view on the kickoff page are a starting point.
+- [ ] **AdvantageScope robot model (task 18).** The CAD is split by motion group (mast, stage A, stage B, carriage, wrist, climber fork, funnel tray), with every pivot and axis in `joints_and_limits.md`. The meshes behind the 3D view on the kickoff page are a starting point.
 - [ ] **Wrist sign in Onshape.** Anyone reading angles off the Onshape mate: mate 0 is stowed and minus raises the tip, so the design angle theta = -(mate + 90). The code uses theta.
 
 ## Where the code stands
 
 As of the last code session (November 21): tasks 1 to 10 of 19 are done, with 59 unit tests and 35 real-time simulation tests passing. The code has not been touched since; this handoff comes from the CAD side.
 
-- **Code:** `C:\Users\klape\Documents\ClaudeFRCBot`, branch `robot-a`, commit `7beb2d5`, not pushed. Start with `docs/HANDOFF.md`, then the plan `docs/superpowers/plans/2026-11-21-robot-a-code.md`.
-- **Design:** [Robot A code design](https://claude.ai/artifact/6YYpCCkQaGtHnapUWu4cRd) (approved November 21). It does not cover the climber, the funnel latch or the final keep-out table: this doc does.
+- **Code:** `C:\Users\klape\Documents\ClaudeFRCBot`, branch `robot-a`, commit `7beb2d5`, not pushed. Start with `docs/HANDOFF.md`, then the plan `docs/superpowers/plans/2026-11-21-claudebot-code.md`.
+- **Design:** [ClaudeBot code design](https://claude.ai/artifact/6YYpCCkQaGtHnapUWu4cRd) (approved November 21). It does not cover the climber, the funnel latch or the final keep-out table: this doc does.
 - **Stack:** Java, WPILib 2026, AdvantageKit, Phoenix 6 Pro, Team 2910-style layout and autos, real physics in simulation.
 - **Done:** scaffold, CAN map and constants, keep-out table (four zones), superstructure planner, field geometry, single-tag position fix, drive-to-point, elevator and wrist against physics.
 - **Next:** 11 coral rollers and algae claw; 12 superstructure; 13 to 15 drivetrain, vision, scoring commands and controls; 16 and 17 game pieces and autos; 18 AdvantageScope model; 19 wiring doc, README, full run.
-- **CAD sources:** drawing package `robotA_cad_package_rev3_2026-11-23` (sheet R-001 has the code rules; `lists/robotA_can_map.csv`; `lists/robotA_joints_and_limits.md`), and the Onshape document *Robot A - Full robot*. The wiring for the CAN IDs below is in [Robot A build instructions](https://claude.ai/artifact/NBBpmCtf4Wyv4jgVFkgQrD), section 8.
+- **CAD sources:** drawing package `robotA_cad_package_rev3_2026-11-23` (sheet R-001 has the code rules; `lists/robotA_can_map.csv`; `lists/robotA_joints_and_limits.md`), and the Onshape document *Robot A - Full robot*. The wiring for the CAN IDs below is in [ClaudeBot build instructions](https://claude.ai/artifact/NBBpmCtf4Wyv4jgVFkgQrD), section 8.
 
 ## Joint conventions
 

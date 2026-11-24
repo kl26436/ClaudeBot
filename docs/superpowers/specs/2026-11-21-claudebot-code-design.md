@@ -1,12 +1,12 @@
 <!-- Exported from the Claude Doc "Robot A code design", https://claude.ai/artifact/6YYpCCkQaGtHnapUWu4cRd, revision 36, on 2026-11-22. The doc is the source; edit it there and re-export. Where docs/HANDOFF.md and this text disagree, the handoff records the decision that overrides it. -->
 
-# Robot A code design
+# ClaudeBot code design
 
 2026-11-21 · @Kevin
 
 ## Summary
 
-Robot A's code will be Java on WPILib 2026 with AdvantageKit and Phoenix 6, laid out the way Team 2910 lays out theirs. Every mechanism is simulated against real physics and shown in AdvantageScope as the detailed CAD model. You approved it on 21 November with one change: the funnel is being cut back.
+ClaudeBot's code will be Java on WPILib 2026 with AdvantageKit and Phoenix 6, laid out the way Team 2910 lays out theirs. Every mechanism is simulated against real physics and shown in AdvantageScope as the detailed CAD model. You approved it on 21 November with one change: the funnel is being cut back.
 
 - **In this pass:** swerve, elevator, wrist, coral rollers, algae claw, one Limelight 4, selectable autos, simulation, tests, and the CAN and wiring map.
 - **Left out:** the climber, LEDs, and tuning on real hardware.
@@ -214,7 +214,7 @@ The simulation has four parts, and AdvantageScope draws all of them on the 3D fi
 
 A saved layout in `ascope/` opens these views in one step. You point AdvantageScope at that folder once, with Use Custom Assets Folder.
 
-**Turning the CAD into the robot model.** AdvantageScope wants a folder named `Robot_RobotA` holding `model.glb` for the base, one `model_N.glb` per moving part, and a `config.json` ([custom assets guide](https://docs.advantagescope.org/more-features/custom-assets/)). I convert `robotA_assembly_complete.step` once the PC is connected, splitting it by the group each part moves with. The CAD axes already match the robot's: X forward, Y left, Z up, carpet at zero.
+**Turning the CAD into the robot model.** AdvantageScope wants a folder named `Robot_ClaudeBot` holding `model.glb` for the base, one `model_N.glb` per moving part, and a `config.json` ([custom assets guide](https://docs.advantagescope.org/more-features/custom-assets/)). I convert `robotA_assembly_complete.step` once the PC is connected, splitting it by the group each part moves with. The CAD axes already match the robot's: X forward, Y left, Z up, carpet at zero.
 
 ## Testing
 
@@ -384,5 +384,5 @@ Climber, LEDs, a second controller with manual overrides, a pit self-test, and p
 
 **What I need from you**
 
-1. This chat opened in the Claude desktop app on the PC that has WPILib 2026, with a project folder and the Robot A CAD folder added.
+1. This chat opened in the Claude desktop app on the PC that has WPILib 2026, with a project folder and the ClaudeBot CAD folder added.
 2. The redesigned funnel's drawing or STEP file, when it exists.

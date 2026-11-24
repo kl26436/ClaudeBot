@@ -1,9 +1,9 @@
-# Robot A
+# ClaudeBot
 
-Robot code for Team 4206's Robot A: swerve drive, a three-stage elevator, a wrist with coral rollers
+Robot code for Team 4206's ClaudeBot: swerve drive, a three-stage elevator, a wrist with coral rollers
 and an algae claw, a winch climber, and one Limelight 4. It runs the real robot and a physics simulation of it from
-the same code. The design is in [docs/superpowers/specs](docs/superpowers/specs/2026-11-21-robot-a-code-design.md),
-the final CAD's numbers and the climb in [docs/cad](docs/cad/ROBOT_A_SOFTWARE_HANDOFF.md),
+the same code. The design is in [docs/superpowers/specs](docs/superpowers/specs/2026-11-21-claudebot-code-design.md),
+the final CAD's numbers and the climb in [docs/cad](docs/cad/SOFTWARE_HANDOFF.md),
 the CAN and power map in [docs/wiring.md](docs/wiring.md), and every unconfirmed value in
 [docs/open-numbers.md](docs/open-numbers.md).
 

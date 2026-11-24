@@ -1,4 +1,4 @@
-# Robot A: joints and limits for the Onshape assemblies
+# ClaudeBot: joints and limits for the Onshape assemblies
 
 Every joint that moves, with the limits that make the stops work. Zero = the pose each package is uploaded in (climber stowed, funnel closed, carriage down, wrist stowed). Put the mate connector Z along the direction given, turn Limits on, and use these min and max.
 

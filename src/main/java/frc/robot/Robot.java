@@ -31,7 +31,7 @@ public class Robot extends LoggedRobot {
     private Notifier simNotifier;
 
     public Robot() {
-        Logger.recordMetadata("ProjectName", "RobotA");
+        Logger.recordMetadata("ProjectName", "ClaudeBot");
         Logger.recordMetadata("TeamNumber", Integer.toString(RobotConstants.TEAM_NUMBER));
         Logger.recordMetadata("RunMode", RobotConstants.currentMode().name());
 

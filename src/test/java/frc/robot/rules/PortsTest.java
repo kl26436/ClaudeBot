@@ -24,7 +24,7 @@ class PortsTest {
             "CANrange", "CANrange");
 
     private static List<String> csv() throws IOException {
-        return Files.readAllLines(Path.of("docs", "cad", "robotA_can_map.csv"), StandardCharsets.UTF_8);
+        return Files.readAllLines(Path.of("docs", "cad", "can_map.csv"), StandardCharsets.UTF_8);
     }
 
     /** The roboRIO port whose use in the CAD list contains this text, for example "DIO 1". */

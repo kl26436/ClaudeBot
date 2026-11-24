@@ -1,4 +1,4 @@
-# Robot A code: handoff
+# ClaudeBot code: handoff
 
 Updated 2026-11-23, after the rev3 CAD. Read this before the plan. It records where the build stands, the
 decisions that override the plan's text, and what is still open.
@@ -8,9 +8,9 @@ decisions that override the plan's text, and what is still open.
 | Thing | Location |
 |---|---|
 | Code | this repository, branch `robot-a`. Nothing has been pushed anywhere. |
-| What the CAD asks of the code | `docs/cad/ROBOT_A_SOFTWARE_HANDOFF.md` (CAN map and joint list beside it). Newer than the design where they differ. |
-| Design | `docs/superpowers/specs/2026-11-21-robot-a-code-design.md`, exported from the Claude Doc "Robot A code design" (rev 36) |
-| Plan | `docs/superpowers/plans/2026-11-21-robot-a-code.md` (19 tasks, all done) |
+| What the CAD asks of the code | `docs/cad/SOFTWARE_HANDOFF.md` (CAN map and joint list beside it). Newer than the design where they differ. |
+| Design | `docs/superpowers/specs/2026-11-21-claudebot-code-design.md`, exported from the Claude Doc "Robot A code design" (rev 36) |
+| Plan | `docs/superpowers/plans/2026-11-21-claudebot-code.md` (19 tasks, all done) |
 | Wiring | `docs/wiring.md`, from the rev3 CAN map |
 | Unconfirmed values | `docs/open-numbers.md`: every `PLACEHOLDER(...)` line and the known simulation limits |
 | AdvantageScope model | `ascope/`, made by `tools/step_to_glb.py` from the rev3 STEP |

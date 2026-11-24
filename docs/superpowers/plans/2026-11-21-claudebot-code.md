@@ -1,14 +1,14 @@
-# Robot A Code Implementation Plan
+# ClaudeBot Code Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** One Java project that runs Robot A (swerve, elevator, wrist, coral rollers, algae claw, one Limelight 4) on the real robot and in a physics simulation shown in AdvantageScope, with selectable 2910-style autos and three layers of tests.
+**Goal:** One Java project that runs ClaudeBot (swerve, elevator, wrist, coral rollers, algae claw, one Limelight 4) on the real robot and in a physics simulation shown in AdvantageScope, with selectable 2910-style autos and three layers of tests.
 
 **Architecture:** Team 2910's layout. CTRE's swerve API sits behind an IO interface; each mechanism has one IO interface and one TalonFX class that both the robot and the simulator run. A simulation subclass adds only physics by feeding Phoenix's simulated motor from a WPILib model. A Superstructure coordinates elevator, wrist and rollers through a pure planner that keeps every move inside the CAD keep-out table. maple-sim supplies the 2025 field.
 
 **Tech Stack:** Java 17, WPILib 2026 (GradleRIO), AdvantageKit 26, Phoenix 6 (26.x, Pro features on), maple-sim (2026 line, `seasonspecific.reefscape2025`), JUnit 5, AdvantageScope 2026.
 
-**Spec:** [Robot A code design](https://claude.ai/artifact/6YYpCCkQaGtHnapUWu4cRd). Task 1 exports it to `docs/superpowers/specs/2026-11-21-robot-a-code-design.md`. Executors read both.
+**Spec:** [ClaudeBot code design](https://claude.ai/artifact/6YYpCCkQaGtHnapUWu4cRd). Task 1 exports it to `docs/superpowers/specs/2026-11-21-claudebot-code-design.md`. Executors read both.
 
 **Reference code (read-only, MIT):** `github.com/FRCTeam2910/2025CompetitionRobot-Public` (autos, drive-to-point, single-tag fix), `github.com/FRCTeam2910/2026CompetitionRobot-Public` (CTRE swerve + maple-sim wiring, 2026 library versions), `github.com/Shenzhen-Robotics-Alliance/maple-sim` (Reefscape arena API).
 
@@ -64,7 +64,7 @@ src/test/java/frc/robot/
   mechanism/ ElevatorSimTest  WristSimTest  RollersSimTest  SuperstructureSimTest
   match/     DriveSimTest  VisionSimTest  TeleopCycleTest  AutoMatchTest
   testutil/  SimHarness.java
-ascope/     Robot_RobotA/{model.glb, model_0..3.glb, config.json}  layout.json
+ascope/     Robot_ClaudeBot/{model.glb, model_0..3.glb, config.json}  layout.json
 tools/      step_to_glb.py
 docs/       wiring.md  open-numbers.md  superpowers/{specs,plans}/
 ```
@@ -78,7 +78,7 @@ Ends with a green `./gradlew build` and every layer 1 test passing.
 ### Task 1: Scaffold the project
 
 **Files:**
-- Create: `build.gradle`, `settings.gradle`, `.wpilib/wpilib_preferences.json`, `vendordeps/*.json`, `NOTICE`, `src/main/java/frc/robot/{Main,Robot,RobotContainer}.java`, `docs/superpowers/specs/2026-11-21-robot-a-code-design.md`, `docs/open-numbers.md`
+- Create: `build.gradle`, `settings.gradle`, `.wpilib/wpilib_preferences.json`, `vendordeps/*.json`, `NOTICE`, `src/main/java/frc/robot/{Main,Robot,RobotContainer}.java`, `docs/superpowers/specs/2026-11-21-claudebot-code-design.md`, `docs/open-numbers.md`
 
 **Interfaces:**
 - Produces: `Robot extends LoggedRobot` with modes `REAL`, `SIM`, `REPLAY` chosen by `RobotConstants.currentMode()`; Gradle tasks `test` (excludes tag `sim`) and `simTest` (only tag `sim`, `maxParallelForks = 1`).
@@ -806,17 +806,17 @@ void autoScoresWhatItClaims(Auto auto, Alliance alliance) {
 ### Task 18: AdvantageScope model and layout
 
 **Files:**
-- Create: `tools/step_to_glb.py`, `ascope/Robot_RobotA/{model.glb,model_0.glb,model_1.glb,model_2.glb,model_3.glb,config.json}`, `ascope/layout.json`
+- Create: `tools/step_to_glb.py`, `ascope/Robot_ClaudeBot/{model.glb,model_0.glb,model_1.glb,model_2.glb,model_3.glb,config.json}`, `ascope/layout.json`
 
-**Blocked until** the Robot A CAD folder is connected. Needs `robotA_assembly_complete.step`.
+**Blocked until** the ClaudeBot CAD folder is connected. Needs `robotA_assembly_complete.step`.
 
 **Interfaces:**
 - Consumes: `Mechanism/Components` (stage A, stage B, carriage, wrist, in that order), `RobotConstants.CameraK`.
-- Produces: `python3 tools/step_to_glb.py <assembly.step> ascope/Robot_RobotA`.
+- Produces: `python3 tools/step_to_glb.py <assembly.step> ascope/Robot_ClaudeBot`.
 
 - [ ] **Step 1:** Write `step_to_glb.py`: load the STEP, convert inches to metres, sort solids into base, stage A, stage B, carriage and wrist by their assembly group, and export `model.glb` (base) and `model_0` to `model_3`. Print each group's solid count and bounding box.
 - [ ] **Step 2:** Run it. Expected: five files, every solid assigned to exactly one group, base bounding box about 0.71 m square.
-- [ ] **Step 3:** Write `config.json`: `"name": "Robot A"`, rotations and position that put the model's origin on the carpet at robot centre with X forward, one fixed camera named "Limelight 4" at the nose (82° field of view, 1280 × 800), and four components. Stages and carriage have zero offsets; the wrist's `zeroedPosition` moves its pivot to the origin.
+- [ ] **Step 3:** Write `config.json`: `"name": "ClaudeBot"`, rotations and position that put the model's origin on the carpet at robot centre with X forward, one fixed camera named "Limelight 4" at the nose (82° field of view, 1280 × 800), and four components. Stages and carriage have zero offsets; the wrist's `zeroedPosition` moves its pivot to the origin.
 - [ ] **Step 4:** In AdvantageScope choose Use Custom Assets Folder and pick `ascope/`. Confirm the 2025 field is in the 3D Field tab's field list; if it is not, download it from AdvantageScope's asset list first. Run `./gradlew simulateJava` and add a 3D Field tab with `Sim/TruePose` as the robot and `Mechanism/Components` as its components. Expected: the stowed model matches the CAD, and raising to L4 moves three stages and tilts the wrist with no part left behind.
 - [ ] **Step 5:** Add the ghost robot for the estimated pose, `Sim/Coral` and `Sim/Algae` as game pieces, a swerve tab, and line graphs of target against measured carriage height and wrist angle. Export the layout to `ascope/layout.json`.
 - [ ] **Step 6:** Commit `feat: AdvantageScope robot model and layout`.

@@ -7,7 +7,7 @@ import java.util.List;
  *
  * <p>Two CAN buses: {@link #DRIVE_BUS} carries the swerve modules and the Pigeon 2; {@link
  * #RIO_BUS} carries the power hub, the mechanisms and their sensors. The values are the CAD package's
- * CAN map, {@code docs/cad/robotA_can_map.csv}; a test compares the two.
+ * CAN map, {@code docs/cad/can_map.csv}; a test compares the two.
  */
 public final class Ports {
     private Ports() {}

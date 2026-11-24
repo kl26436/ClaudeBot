@@ -19,7 +19,7 @@
               "type": 0,
               "title": "",
               "controller": null,
-              "controllerUUID": "robota00robota00robota00robota00",
+              "controllerUUID": "claude00claude00claude00claude00",
               "renderer": null,
               "controlsHeight": 0
             },
@@ -34,7 +34,7 @@
                     "logType": "Pose2d",
                     "visible": true,
                     "options": {
-                      "model": "Robot A"
+                      "model": "ClaudeBot"
                     }
                   },
                   {
@@ -50,7 +50,7 @@
                     "logType": "Pose2d",
                     "visible": true,
                     "options": {
-                      "model": "Robot A",
+                      "model": "ClaudeBot",
                       "color": "#00ff00"
                     }
                   },
@@ -75,7 +75,7 @@
                 ],
                 "game": "FRC:2025 Field (Welded)"
               },
-              "controllerUUID": "robota01robota01robota01robota01",
+              "controllerUUID": "claude01claude01claude01claude01",
               "renderer": {
                 "cameraIndex": -1,
                 "orbitFov": 50,
@@ -123,7 +123,7 @@
                 "sizeY": 0.578,
                 "orientation": 1
               },
-              "controllerUUID": "robota02robota02robota02robota02",
+              "controllerUUID": "claude02claude02claude02claude02",
               "renderer": null,
               "controlsHeight": 200
             },
@@ -168,7 +168,7 @@
                 "leftFilter": 0,
                 "rightFilter": 0
               },
-              "controllerUUID": "robota03robota03robota03robota03",
+              "controllerUUID": "claude03claude03claude03claude03",
               "renderer": null,
               "controlsHeight": 200
             },
@@ -223,7 +223,7 @@
                 "leftFilter": 0,
                 "rightFilter": 0
               },
-              "controllerUUID": "robota04robota04robota04robota04",
+              "controllerUUID": "claude04claude04claude04claude04",
               "renderer": null,
               "controlsHeight": 200
             },
@@ -298,7 +298,7 @@
                 "leftFilter": 0,
                 "rightFilter": 0
               },
-              "controllerUUID": "robota05robota05robota05robota05",
+              "controllerUUID": "claude05claude05claude05claude05",
               "renderer": null,
               "controlsHeight": 200
             }

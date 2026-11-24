@@ -1,6 +1,6 @@
-"""Turn the Robot A assembly STEP into AdvantageScope's robot model, one GLB per motion group.
+"""Turn the ClaudeBot assembly STEP into AdvantageScope's robot model, one GLB per motion group.
 
-    python tools/step_to_glb.py <robotA_assembly_complete.step> ascope/Robot_RobotA
+    python tools/step_to_glb.py <robotA_assembly_complete.step> ascope/Robot_ClaudeBot
 
 Needs build123d and numpy (the CAD source folder's .venv has both). Writes model.glb (everything that
 does not move on the robot) and model_0.glb to model_5.glb, in the order of Mechanism/Components: stage A,
@@ -137,7 +137,7 @@ def write_glb(path, by_colour):
             "attributes": {"POSITION": len(accessors) - 2}, "indices": len(accessors) - 1, "material": len(materials)})
         materials.append(material)
     doc = {
-        "asset": {"version": "2.0", "generator": "Robot A step_to_glb.py"}, "scene": 0, "scenes": [{"nodes": [0]}],
+        "asset": {"version": "2.0", "generator": "ClaudeBot step_to_glb.py"}, "scene": 0, "scenes": [{"nodes": [0]}],
         "nodes": [{"mesh": 0}], "meshes": [{"primitives": primitives}], "materials": materials,
         "accessors": accessors, "bufferViews": views, "buffers": [{"byteLength": len(blob)}]}
     text = json.dumps(doc, separators=(",", ":")).encode()

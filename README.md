@@ -37,8 +37,14 @@ processor, Back stows and cancels, Start resets the heading.
 
 Hold D-pad right to climb. The first hold moves the mechanism out of the way, opens the funnel and lets
 the fork down to level; let go, back onto the cage, and hold it again to wind in. Letting go pauses at any
-point. Opening the funnel cannot be undone in a match: from then on the mechanism stays put until robot
-code restarts. On a field the climb is locked until the last 30 s.
+point. After a missed cage, hold D-pad left to let the empty fork back down; it refuses if the robot is
+hanging on it. Opening the funnel cannot be undone in a match: from then on the mechanism stays in the climb
+pose. On a field the climb is locked until the last 30 s.
+
+**After every climb, in the pit:** with the robot disabled, stow the fork, latch the tray, and press
+`Climber/Pit reset` on the dashboard. The robot remembers a climb across code restarts, because nothing on it
+can tell a hanging fork from a stowed one. If the reset is forgotten, the next match on a field clears it as
+long as the fork is in stow; in practice nothing does.
 
 The simulation steps every mechanism against a physics model and the field with maple-sim. A coral
 arrives 0.7 s after the robot settles at a station with the intake running, and each released piece
@@ -91,7 +97,7 @@ On Windows, VS Code's Java extension can hold files under `build/` open and make
   (`ClimberIOTalonFX`). Do the pawls with the rope off.
 - **Start every match with the fork stowed:** nothing measures it, and its angle counts from there.
 - **Unstow band:** before trusting it, move the wrist through its range by hand with the carriage at 0.75,
-  1.25 and 1.75 in.
+  1.25 and 2.0 in.
 
 ## Add an auto
 

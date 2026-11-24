@@ -99,6 +99,17 @@ class ClimberSimTest {
         assertEquals(State.STOWED, climber.state(), "letting go before the latch fires undoes nothing");
     }
 
+    /** Wherever the pawls rest between teeth when the wind-in starts, the fork gets out. */
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(doubles = {89.0, 90.9, 91.7, 91.9, 92.6})
+    void deploysFromAnywhereBetweenTwoTeeth(double startDeg) {
+        runUntil(State.OPENING, true, 1.5);
+        sim.setRopeDeg(startDeg);
+        runUntil(State.DEPLOYED, true, 9);
+        assertEquals(0, sim.trueForkDeg(), 2.5);
+        assertTrue(maxForkDeg < 96);
+    }
+
     @Test
     void aShortPressFiresNothing() {
         hold(true, 0.5);
@@ -117,7 +128,7 @@ class ClimberSimTest {
         assertEquals(90, sim.trayDeg(), 0.01);
         assertFalse(sim.pawlsUp());
         runUntil(State.LIFTING, true, 1);
-        assertTrue(sim.trueForkDeg() > 90 + 1, "wound in to take the load off the pawls");
+        assertTrue(sim.trueForkDeg() > 90 + 0.8, "wound in to take the load off the pawls");
         runUntil(State.PAYING_OUT, true, 1);
         assertTrue(sim.pawlsUp(), "paying out with a pawl down would strip it");
         runUntil(State.DEPLOYED, true, 4);
@@ -533,11 +544,11 @@ class ClimberSimTest {
             press(c, 2.2);
             assertEquals(State.TENSIONING, c.state());
             io.statorAmps = 40;
-            for (int i = 0; i < 10 && c.state() == State.TENSIONING; i++) {
+            for (int i = 0; i < 20 && c.state() == State.TENSIONING; i++) {
                 SimHarness.run(0.02);
             }
             io.statorAmps = 3; // told to stay where it is, the motor stops pushing
-            SimHarness.run(0.06);
+            SimHarness.run(0.04);
             assertEquals(State.LIFTING, c.state(), "must not push on the bolts until it stalls");
             assertEquals(90, io.target, 0.1, "holds where it stopped");
         }, 90, CommitMemory.inMemory(""));
@@ -547,8 +558,11 @@ class ClimberSimTest {
     void aLostMotorLetsThePawlsDown() {
         withScripted((io, c) -> {
             press(c, 2.2);
-            io.forkDeg = 93;
-            SimHarness.run(1.0);
+            io.forkDeg = 91.8;
+            for (int i = 0; i < 60 && c.state() != State.PAYING_OUT; i++) {
+                SimHarness.run(0.02);
+            }
+            SimHarness.run(0.06);
             assertEquals(State.PAYING_OUT, c.state());
             assertTrue(io.lifted);
             io.connected = false;

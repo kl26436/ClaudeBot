@@ -146,8 +146,11 @@ public final class RobotConstants {
         /** One ratchet tooth of fork travel. */
         public static final double TOOTH_DEG = 3.6;
 
-        /** Wound in this far to take the load off the pawls before lifting them. */
-        public static final double TENSION_DEG = 3; // PLACEHOLDER(tuning)
+        /**
+         * Wound in this far to take the load off the pawls before lifting them: half a tooth, as far as it
+         * goes from the tooth they rest on and the next one they would drop over.
+         */
+        public static final double TENSION_DEG = TOOTH_DEG / 2;
 
         public static final double TENSION_MAX_DEG = 95;
         /** Winding in the empty fork takes a few amps; this much for this long is the stop bolts or the robot. */
@@ -161,7 +164,7 @@ public final class RobotConstants {
         public static final double COMMIT_HOLD_S = 0.7;
 
         public static final double CLIMB_HOLD_S = 0.3;
-        public static final double TENSION_TOL_DEG = 1.0;
+        public static final double TENSION_TOL_DEG = 0.6;
         public static final double STATOR_LIMIT_A = 60;
         public static final double CRUISE_DEG_PER_S = 60; // PLACEHOLDER(tuning)
         public static final double ACCEL_DEG_PER_S2 = 240; // PLACEHOLDER(tuning)
@@ -178,6 +181,11 @@ public final class RobotConstants {
         public static final double LATCH_HORN_SWING_DEG = 42;
         /** Time for the tubing to throw the tray open; nothing senses it. */
         public static final double FUNNEL_OPEN_S = 1.0; // PLACEHOLDER(robot-check)
+        /** A fork that has not moved this far this long into paying out has a pawl still in a tooth: try again. */
+        public static final double JAM_DEG = 0.5;
+
+        public static final double JAM_S = 0.4;
+        public static final int JAM_TRIES = 4;
         /** Time for the servos to lift the pawls; nothing senses them. */
         public static final double PAWL_LIFT_S = 0.4; // PLACEHOLDER(robot-check)
 

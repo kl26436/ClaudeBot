@@ -1,6 +1,7 @@
 package frc.robot.subsystems.climber;
 
 import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -97,11 +98,17 @@ public class Climber extends SubsystemBase {
     private double stateStartS = 0;
     private double tensionTargetDeg;
     private State beforeTensioning = State.OPENING;
+    /** A held load is a steady current one way; the position loop's ripple averages out. */
+    private final LinearFilter ampsFilter = LinearFilter.movingAverage(10);
+
+    private double meanAmps = 0;
     private double loadSinceS = Double.NaN;
     private double quietSinceS = Double.NaN;
     private double stalledSinceS = Double.NaN;
     private boolean stalled = false;
     private boolean refused = false;
+    private double payOutFromDeg = ClimberK.STOWED_DEG;
+    private int jamTries = ClimberK.JAM_TRIES;
 
     public Climber(ClimberIO io, Mechanism mechanism, CommitMemory memory) {
         this.io = io;
@@ -210,6 +217,7 @@ public class Climber extends SubsystemBase {
         io.updateInputs(inputs);
         Logger.processInputs("Climber", inputs);
         double now = Timer.getFPGATimestamp();
+        meanAmps = ampsFilter.calculate(inputs.statorAmps);
 
         if (!startDecided && inputs.connected) {
             startDecided = true;
@@ -238,6 +246,7 @@ public class Climber extends SubsystemBase {
         }
         double heldS = go ? now - climbHeldSinceS : 0;
         if (!go && !lower) {
+            jamTries = ClimberK.JAM_TRIES;
             armed = true;
             stalled = false;
             refused = false;
@@ -306,6 +315,7 @@ public class Climber extends SubsystemBase {
                     lift = false;
                     refuse();
                 } else if (inState() >= ClimberK.PAWL_LIFT_S) {
+                    payOutFromDeg = inputs.forkDeg;
                     enter(State.PAYING_OUT);
                 }
             }
@@ -321,6 +331,13 @@ public class Climber extends SubsystemBase {
                     enter(State.DEPLOYED);
                 } else if (!payOut) {
                     // The pawls fall on the ratchet: unload them again before paying out on.
+                    restartTensioning();
+                } else if (inState() >= ClimberK.JAM_S && inputs.forkDeg > payOutFromDeg - ClimberK.JAM_DEG && jamTries > 0) {
+                    // A pawl had just dropped over a tooth. The fork rests on that tooth now, so half a
+                    // tooth from here is clear of both.
+                    jamTries--;
+                    drive = false;
+                    lift = false;
                     restartTensioning();
                 }
             }
@@ -423,7 +440,7 @@ public class Climber extends SubsystemBase {
 
     /** An unloaded fork takes a few amps to wind in; the stop bolts or the robot's weight take far more. */
     private boolean loadFelt(boolean driving, double now) {
-        if (!driving || Math.abs(inputs.statorAmps) < ClimberK.TENSION_LOAD_A) {
+        if (!driving || Math.abs(meanAmps) < ClimberK.TENSION_LOAD_A) {
             loadSinceS = Double.NaN;
             return false;
         }
@@ -435,7 +452,7 @@ public class Climber extends SubsystemBase {
 
     /** True once the fork has been held in place for a while with next to no current. */
     private boolean quietFor(boolean holding, double now) {
-        if (!holding || Math.abs(inputs.statorAmps) >= ClimberK.TENSION_LOAD_A) {
+        if (!holding || Math.abs(meanAmps) >= ClimberK.TENSION_LOAD_A) {
             quietSinceS = Double.NaN;
             return false;
         }

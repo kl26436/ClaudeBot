@@ -42,7 +42,7 @@ In simulation every auto scores exactly its branches on both alliances.
 1. **Planner, algae.** The keep-out table outranks the "+10 degrees with algae" rule. STOW with an algae maps to `ALGAE_CARRY`.
 2. **Planner, judging.** Measurements are clamped to the soft limits; a NaN measurement throws. The measured wrist is judged 1 degree worse than it reads. `next()` takes both velocities: the wrist target must be legal over every zone the carriage passes before it can stop (one loop, still accelerating, plus Motion Magic deceleration, plus 0.25 in either side), and the carriage only moves where the wrist's whole stopping sweep is legal.
 3. **Planner, path.** The wrist heads at once for an angle legal in every band between the carriage and its goal.
-4. **Unstow band.** `KeepOut` allows any angle from 0.75 to 1.75 in; carriage moves in and out of stow stop at 1.25. The drawing's table has no such band (see open-numbers for how it was measured). A carriage that dips below it with the wrist out rises to 1.25 with the wrist held.
+4. **Unstow band.** `KeepOut` allows any angle from 0.75 to 2.0 in; carriage moves in and out of stow stop at 1.25. The drawing's table has no such band (see open-numbers for how it was measured). A carriage that dips below it with the wrist out rises to 1.25 with the wrist held.
 5. **Reef routing.** Via points on a 2.0 m circle; same-face legs go direct and may fail `pathClear`.
 6. **Drive-to-point.** Speed is `min(max(0, PD) + friction, maxSpeed)`; the derivative resets on a new target.
 7. **Constants.** Dimensions and ratios in `RobotConstants`; gains and thresholds in the class that uses them, marked `PLACEHOLDER(tuning)`.
@@ -56,7 +56,8 @@ In simulation every auto scores exactly its branches on both alliances.
 15. **Drive.** Every drive request goes through `FieldSpeedsRequest` so FOC follows `PRO_LICENSED`. The drive's acceleration is held to 80 % of the tipping acceleration on drawing R-001 at the present carriage height. Drive motors are limited to 60 A stator (EL-001's starting value).
 16. **Autos.** An auto started without the start-pose button raises an alert and puts the estimate on its start pose. The button does nothing while enabled.
 17. **Simulated bus load.** Mechanism IO classes call `optimizeBusUtilization`; the simulated drivetrain runs odometry at 100 Hz (the real robot keeps 250 Hz).
-18. **Climb.** D-pad right, held: the CAD's sequence with one change, pawls down as soon as the fork is level instead of after the cage seats. A second press winds in. On a field it is locked until the last 30 s. An algae aboard is dropped first. Once the funnel fires the mechanism stays in the climb pose until a code restart; a wrist fault stops the fork paying out but not a climb under load. A stalled winch stops until the button is released.
+18. **Climb.** D-pad right, held: the CAD's sequence with one change, pawls down as soon as the fork is level instead of after the cage seats. A second hold winds in; D-pad left lets an empty fork back down. The funnel needs the button held 0.7 s in the climb pose, and on a field the last 30 s. An algae aboard is dropped first. The pawls lift only once the rope has held still with next to no current, so a hanging robot cannot be let down. Once the funnel fires the mechanism stays in the climb pose, across code restarts (`CommitMemory`, on the roboRIO's disk), until the pit reset or the next match with the fork stowed. A restart that cannot tell where the fork is (a motor controller that lost power) stops the winch for good.
+19. **A pull under load** goes on through a wrist fault, and may be restarted with the wrist sensor dead; it may not be restarted with the wrist known to be out of the pose. A wrist fault before the first pull blocks the climb. That last is a choice the drive team may want to change.
 
 ## Open problems
 
@@ -67,6 +68,8 @@ In simulation every auto scores exactly its branches on both alliances.
 
 ## Minor review findings still open
 
+- With the fork out, a disable lets the wrist droop and the carriage sag, and the next enable drives them back to the climb pose. The CAD rule says no motion; leaving them sagged into the bay seemed worse.
+- `ClimbMatchTest` schedules the commands directly; the controller bindings themselves are not tested.
 - `DeviceCheck` cannot report the PDH missing (constructing `PowerDistribution` does not fail), and runs only at boot.
 - A lost elevator leader (`connected` false) leaves a stale height feeding the planner.
 - Vision applies fixes with no latency compensation (about 7 cm at 3 m/s).

@@ -132,6 +132,14 @@ public class ClimberIOSim extends ClimberIOTalonFX {
         write();
     }
 
+    /** Leave the rope, at rest, where the test wants it, whatever tooth that is past. */
+    public void setRopeDeg(double deg) {
+        ropeDeg = deg;
+        speedDegPerS = 0;
+        toothDeg = ClimberK.TOOTH_DEG * Math.floor(deg / ClimberK.TOOTH_DEG + 1e-9);
+        write();
+    }
+
     /** Where the fork really is: on the rope, or on the level stop with the rope slack. */
     public double trueForkDeg() {
         return Math.max(ropeDeg, ClimberK.LEVEL_STOP_DEG);

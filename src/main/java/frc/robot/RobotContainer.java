@@ -145,6 +145,7 @@ public class RobotContainer {
                         ? CommitMemory.onDisk()
                         : CommitMemory.inMemory(""));
         superstructure.setClimbLock(climber::committed);
+        wrist.setHoldOnMotor(climber::committed);
         vision = new Vision(visionIo, drive);
         sim = driveSim == null
                 ? null

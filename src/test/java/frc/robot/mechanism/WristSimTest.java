@@ -183,14 +183,16 @@ class WristSimTest {
         double wristDeg = 0;
         double absoluteDeg = -90;
         double velocityDegPerS = 0;
+        boolean connected = true;
+        boolean encoderConnected = true;
         boolean reset = false;
         int seeds = 0;
         int targetsSent = 0;
 
         @Override
         public void updateInputs(WristIOInputs in) {
-            in.connected = true;
-            in.encoderConnected = true;
+            in.connected = connected;
+            in.encoderConnected = encoderConnected;
             in.wristDeg = wristDeg;
             in.absoluteDeg = absoluteDeg;
             in.velocityDegPerS = velocityDegPerS;
@@ -306,6 +308,88 @@ class WristSimTest {
         } finally {
             w.close();
         }
+    }
+
+    /** A wrist holding level, seeded and trusted, then told that a climb has begun (or not). */
+    private void withLevelWrist(boolean climbing, java.util.function.BiConsumer<SeedableIO, Wrist> body) {
+        var io = new SeedableIO();
+        io.absoluteDeg = 0;
+        var w = new Wrist(io); // registered with the scheduler, so the harness runs its periodic
+        try {
+            w.setGoalDeg(0);
+            SimHarness.run(0.2);
+            assertTrue(w.isTrusted());
+            w.setHoldOnMotor(() -> climbing);
+            SimHarness.run(0.1);
+            body.accept(io, w);
+        } finally {
+            edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance().unregisterSubsystem(w);
+            w.close();
+        }
+    }
+
+    @Test
+    void losingTheEncoderInAClimbHoldsOnTheMotor() {
+        withLevelWrist(true, (io, w) -> {
+            io.encoderConnected = false;
+            io.absoluteDeg = -180; // whatever an unplugged input reads
+            SimHarness.run(0.2);
+            int sent = io.targetsSent;
+            SimHarness.run(0.2);
+            assertTrue(w.isTrusted());
+            assertTrue(io.targetsSent > sent, "still holding the wrist up");
+            assertTrue(AlertProbe.active(ENCODER_ALERT), "but it says so");
+        });
+    }
+
+    @Test
+    void anEncoderThatSlipsInAClimbIsNotFollowed() {
+        withLevelWrist(true, (io, w) -> {
+            int seeds = io.seeds;
+            io.absoluteDeg = -40;
+            SimHarness.run(1.0);
+            assertTrue(w.isTrusted());
+            assertEquals(seeds, io.seeds);
+            assertEquals(0, w.wristDeg(), 1e-9);
+            assertTrue(AlertProbe.active(ENCODER_ALERT));
+        });
+    }
+
+    @Test
+    void outsideAClimbALostEncoderStillStopsTheWrist() {
+        withLevelWrist(false, (io, w) -> {
+            io.encoderConnected = false;
+            SimHarness.run(0.2);
+            assertFalse(w.isTrusted());
+        });
+    }
+
+    @Test
+    void aMotorThatCannotKnowIsNotHeldOn() {
+        withLevelWrist(true, (io, w) -> {
+            io.encoderConnected = false;
+            io.reset = true; // rebooted: the rotor count is gone and nothing can restore it
+            SimHarness.run(0.2);
+            assertFalse(w.isTrusted());
+        });
+        withLevelWrist(true, (io, w) -> {
+            io.encoderConnected = false;
+            io.connected = false;
+            SimHarness.run(0.2);
+            assertFalse(w.isTrusted());
+        });
+    }
+
+    @Test
+    void anEncoderDeadBeforeTheClimbIsNotForgiven() {
+        withLevelWrist(false, (io, w) -> {
+            io.encoderConnected = false;
+            SimHarness.run(0.2);
+            assertFalse(w.isTrusted());
+            w.setHoldOnMotor(() -> true);
+            SimHarness.run(0.2);
+            assertFalse(w.isTrusted());
+        });
     }
 
     @Test

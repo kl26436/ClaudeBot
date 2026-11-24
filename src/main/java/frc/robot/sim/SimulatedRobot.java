@@ -317,6 +317,11 @@ public class SimulatedRobot extends SubsystemBase {
         coralIo.setRangeConnected(connected);
     }
 
+    /** Unplug or replug the wrist's absolute encoder. */
+    public synchronized void setWristEncoderConnected(boolean connected) {
+        wrist.setEncoderConnected(connected);
+    }
+
     /** Where the carriage really is, in inches. */
     public synchronized double trueCarriageIn() {
         return elevator.trueCarriageIn();

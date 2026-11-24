@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.config.RobotConstants.WristK;
 import frc.robot.config.Setpoints;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -60,9 +61,23 @@ public class Wrist extends SubsystemBase {
 
     private boolean seedSent = false;
     private double totalReseedDeg = 0;
+    private BooleanSupplier holdOnMotor = () -> false;
+    /** The motor has been counting from a trusted angle ever since. */
+    private boolean motorKnows = false;
+
 
     public Wrist(WristIO io) {
         this.io = io;
+    }
+
+    /**
+     * While {@code hold} is true (a climb has begun), a wrist that was trusted when it became true stays
+     * trusted on its motor's own count if the encoder is lost or slips. It only has to hold still there,
+     * and letting go would drop it into the climber's way. A motor that reboots or stops answering is
+     * still not trusted.
+     */
+    public void setHoldOnMotor(BooleanSupplier hold) {
+        holdOnMotor = hold;
     }
 
     /** Set the angle goal, clamped to the soft travel. */
@@ -83,7 +98,7 @@ public class Wrist extends SubsystemBase {
         return trusted && !Double.isNaN(goalDeg) && Math.abs(inputs.wristDeg - goalDeg) <= Setpoints.WRIST_TOL_DEG;
     }
 
-    /** False when the absolute encoder is unplugged or reads an angle the wrist cannot be at. */
+    /** False when the wrist's angle is not known: see {@link #setHoldOnMotor} for the one time a lost encoder is not enough. */
     public boolean isTrusted() {
         return trusted;
     }
@@ -112,7 +127,7 @@ public class Wrist extends SubsystemBase {
         }
         // Both are fed every loop, so the debounce timing does not depend on the other checks.
         boolean slack = stillOffset.calculate(
-                agrees && gap > RESEED_DEG && Math.abs(inputs.velocityDegPerS) < STILL_DEG_PER_S);
+                encoderOk && agrees && gap > RESEED_DEG && Math.abs(inputs.velocityDegPerS) < STILL_DEG_PER_S);
         boolean disagrees = disagreement.calculate(!agrees);
         if (slack && !seeding) {
             totalReseedDeg += inputs.absoluteDeg - inputs.wristDeg;
@@ -123,8 +138,11 @@ public class Wrist extends SubsystemBase {
             io.seed(inputs.absoluteDeg);
             seedSent = true;
         }
-        trusted = encoderOk && !seeding && !disagrees && !walkedOff;
-        encoderAlert.set(!trusted);
+        boolean encoderTrusted = encoderOk && !seeding && !disagrees && !walkedOff;
+        boolean holding = holdOnMotor.getAsBoolean();
+        motorKnows = !seeding && inputs.connected && (encoderTrusted || (holding && motorKnows));
+        trusted = encoderTrusted || (holding && motorKnows);
+        encoderAlert.set(!encoderTrusted);
 
         if (trusted && !Double.isNaN(goalDeg)) {
             io.setTargetDeg(goalDeg);

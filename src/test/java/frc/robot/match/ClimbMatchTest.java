@@ -99,6 +99,11 @@ class ClimbMatchTest {
         SimHarness.run(1.5);
         assertEquals(0, r.sim().trueWristDeg(), 3);
 
+        // The wrist encoder dies: the wrist stays up on its motor, and the climb is not lost.
+        r.sim().setWristEncoderConnected(false);
+        ticks(0.5);
+        assertEquals(0, r.sim().trueWristDeg(), 3);
+
         // Back onto the cage, press again, and up.
         r.sim().setCageCaptured(true);
         scheduler.schedule(climb);
@@ -106,5 +111,6 @@ class ClimbMatchTest {
         climb.cancel();
         ticks(0.5);
         assertEquals(88, r.sim().trueForkDeg(), 5);
+        assertEquals(0, r.sim().trueWristDeg(), 3);
     }
 }

@@ -129,7 +129,7 @@ Motor data in the code and simulator: Kraken X60 with FOC, 5,800 rpm free, 9.37 
 
 | Auto | First | Second | Third |
 | --- | --- | --- | --- |
-| 3 Right, blue | E at 2.4 s | C at 8.3 s | D at 13.6 s |
+| 3 Right, blue | E at 2.3 s | C at 8.1 s | D at 13.5 s |
 | 3 Left, blue | J at 2.4 s | L at 8.2 s | K at 13.6 s |
 
 A station cycle takes about 5.6 s, of which 0.7 s is the simulated human player (assumed). Times vary by about 0.2 s from run to run. That leaves about 1.4 s of the 15.

@@ -1,7 +1,7 @@
 # Simulated runs, for animating
 
 Recordings of the robot code running in simulation, ten rows a second (the driver cycle and the vision runs twenty, the elevator move fifty): where the robot and its mechanisms
-really were, not what its sensors thought. Small enough to load in a page (3 to 30 KB each).
+really were, not what its sensors thought. Small enough to load in a page (3 to 16 KB each).
 
 | File | What it is |
 | --- | --- |

@@ -95,6 +95,11 @@ tasks.register('simTest', Test) {
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
     // -PreplayDir=docs/playbook/replays writes every blue auto's simulated run there (see AutoMatchTest).
     systemProperty 'replayDir', findProperty('replayDir') ?: ''
+    if (findProperty('replayDir')) {
+        // The commit each recording came from; '-dirty' if tracked files had changes.
+        systemProperty 'replayCode',
+                providers.exec { commandLine 'git', 'describe', '--always', '--dirty' }.standardOutput.asText.get().trim()
+    }
     maxParallelForks = 1
     // A fresh JVM per test class. Phoenix's simulator slows down as devices are created and closed
     // over a long run, until remote-sensor frames go stale; one class's devices must not load the next.

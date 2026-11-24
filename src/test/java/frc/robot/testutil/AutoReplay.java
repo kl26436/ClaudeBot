@@ -7,6 +7,7 @@ import frc.robot.sim.ScoreJudge.CoralScore;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -28,10 +29,14 @@ public final class AutoReplay {
         return dir.isEmpty() ? null : Path.of(dir);
     }
 
+    /** The code the run came from and the day it was recorded, for the head of the file. */
+    public static String stamp() {
+        return "\"code\":\"" + System.getProperty("replayCode", "unknown") + "\",\"recorded\":\"" + LocalDate.now() + "\"";
+    }
+
     /** One row: time, x, y (metres, blue origin), heading, carriage (in), wrist (degrees), coral, algae. */
     public void sample(AutoHarness h, double tS) {
         Pose2d p = h.sim().truePose();
-        var s = h.robot().superstructure();
         samples.add(String.format(
                 Locale.ROOT,
                 "[%.1f,%.3f,%.3f,%.1f,%.1f,%.1f,%d,%d]",
@@ -41,8 +46,8 @@ public final class AutoReplay {
                 p.getRotation().getDegrees(),
                 h.sim().trueCarriageIn(),
                 h.sim().trueWristDeg(),
-                s.hasCoral() ? 1 : 0,
-                s.hasAlgae() ? 1 : 0));
+                h.sim().coralAboard() ? 1 : 0,
+                h.sim().algaeAboard() ? 1 : 0));
         if (h.sim().algaeInNet() > algaeInNet) {
             algaeInNet = h.sim().algaeInNet();
             netTimeS = tS;
@@ -59,7 +64,7 @@ public final class AutoReplay {
             events.add(String.format(Locale.ROOT, "{\"t\":%.1f,\"what\":\"net\"}", netTimeS));
         }
         String label = AutoChooser.PROGRAMS.stream().filter(p -> p.auto() == auto).findFirst().orElseThrow().label();
-        String json = "{\n\"auto\":\"" + auto + "\",\"label\":\"" + label + "\",\"alliance\":\"Blue\",\n"
+        String json = "{\n\"auto\":\"" + auto + "\",\"label\":\"" + label + "\",\"alliance\":\"Blue\",\n" + stamp() + ",\n"
                 + "\"columns\":[\"t_s\",\"x_m\",\"y_m\",\"heading_deg\",\"carriage_in\",\"wrist_deg\",\"coral\",\"algae\"],\n"
                 + "\"events\":[" + String.join(",", events) + "],\n"
                 + "\"samples\":[\n" + String.join(",\n", samples) + "\n]}\n";

@@ -59,6 +59,7 @@ Motor data in the code and simulator: Kraken X60 with FOC, 5,800 rpm free, 9.37 
 - **Problem:** the drawing's table has no height where the wrist may leave stow. The clash grid showed every angle clear at exactly 1.25 in, and no mechanism holds exactly anything.
 - **Measured:** 550,000 points on the wrist and 2.2 million on everything else, nearest distance at 12 heights and 19 angles. From 0.75 to 2.0 in, every angle from −90° to +75° clears by about a third of an inch or more.
 - **Decided:** the wrist may be anywhere in that band; the carriage aims for 1.25 in, and the rest is room to miss. See 2.4.
+- **Rechecked on the final package, 3.2:** the same.
 - **Check by hand on the robot first.**
 
 ### Nov 23: Phoenix counts rotor turns, the code converts to inches (Code)
@@ -173,7 +174,7 @@ A station cycle takes about 5.6 s, of which 0.7 s is the simulated human player 
    - [ ] For every fix, remove it and watch the test fail.
 
 ### Material ready to use
-- **`replays/`:** every auto on blue, as really driven in simulation, ten rows a second: time, x, y, heading, carriage, wrist, coral and algae aboard, with the moment of each score. About 6 KB each. Made by `AutoMatchTest` with `./gradlew simTest --tests '*AutoMatchTest*' -PreplayDir=docs/playbook/replays`. Metres from the blue corner, so it drops onto the field map.
+- **[`replays/`](replays/README.md):** every auto on blue and one climb, as really driven in simulation, ten rows a second. Its README has the format, the events and how to move the 3D model.
 - **`ascope/Robot_ClaudeBot/`:** the real CAD model in seven pieces that move separately (about 5 MB in all, GLB, metres, Y up). With `replays/` it can play an auto in 3D. `SimulatedRobot.componentPoses()` has the position of each piece. Parts are merged by colour, so it cannot name a clicked part.
 - **`docs/wiring.md`:** CAN map, power and bus order, for Wire it.
 

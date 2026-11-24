@@ -23,8 +23,20 @@ From another site, copy them at build time, or fetch
 
 ## The format
 
-`columns` names each value in a row of `samples`. `events` are moments to mark: a coral scored
-(`{"t":2.3,"what":"coral","branch":"E","level":"L4"}`), an algae in the net, or a step of the climb.
+Every file starts with a label, `code` (the commit of this repo the run came from) and `recorded` (the date). If the
+code has changed since `code` in a way that matters, record it again. `columns` names each value in a row of `samples`.
+
+`events` are moments to mark. Each has `t`, in seconds, and `what`:
+
+| `what` | In | Other fields |
+| --- | --- | --- |
+| `coral` | autos | `branch` (A to L) and `level` (L1 to L4): a coral scored there |
+| `net` | `centre_h_algae.json` | none: an algae went into the net |
+| `STOWED`, `PREPARING`, `OPENING`, `TENSIONING`, `LIFTING`, `PAYING_OUT`, `DEPLOYED`, `WINDING`, `CLIMBED` | `climb.json` | none: the climb entered this step |
+
+The climb steps, in that order: stowed, waiting for the climb pose, the funnel opening, winding in to unload the pawls,
+lifting them, letting the fork down, waiting for the cage, winding in, done. Between `DEPLOYED` and `WINDING` the driver
+backs onto the cage, which the recording does not show: the robot stays where it is.
 
 | Column | Meaning |
 | --- | --- |
@@ -33,7 +45,7 @@ From another site, copy them at build time, or fetch
 | `heading_deg` | Way the front points: 0 is away from the blue wall, counter-clockwise positive. It wraps at 180 |
 | `carriage_in` | Carriage height above rest, 0 to 66 |
 | `wrist_deg` | -90 stowed, 0 level, positive tip up |
-| `coral`, `algae` | 1 while the robot's sensor sees one aboard |
+| `coral`, `algae` | 1 while one is really aboard |
 | `fork_deg` | Climber fork: 90 stowed, 0 level and pointing back |
 | `tray_deg` | Funnel tray: 0 closed, 90 open |
 

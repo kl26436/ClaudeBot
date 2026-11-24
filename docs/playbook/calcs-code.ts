@@ -1,5 +1,6 @@
 // Calculators for the playbook's Code it chapter, in the shape src/calcs.ts uses.
-// To add them: paste the entries into `calcs`, the helpers above it, and 'Code' into CalcDef's group type.
+// To add them: paste the entries into `calcs` and the helpers above it, add 'Code' to CalcDef's group type, and add
+// 'Code' to `groups` in AllCalcs.astro so the Math reference page lists them.
 // Default values are the robot's own numbers; the working is in code-decisions-and-math.md.
 
 import type { CalcDef, Values } from '../calcs';

@@ -70,7 +70,7 @@ class ClimbReplayTest {
         Files.createDirectories(AutoReplay.folder());
         Files.writeString(
                 AutoReplay.folder().resolve("climb.json"),
-                "{\n\"label\":\"Deep climb\",\n"
+                "{\n\"label\":\"Deep climb\",\n" + AutoReplay.stamp() + ",\n"
                         + "\"columns\":[\"t_s\",\"carriage_in\",\"wrist_deg\",\"fork_deg\",\"tray_deg\"],\n"
                         + "\"events\":[" + String.join(",", events) + "],\n"
                         + "\"samples\":[\n" + String.join(",\n", samples) + "\n]}\n");

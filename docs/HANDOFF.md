@@ -15,7 +15,7 @@ decisions that override the plan's text, and what is still open.
 | Wiring | `docs/wiring.md`, from the rev3 CAN map |
 | Unconfirmed values | `docs/open-numbers.md`: every `PLACEHOLDER(...)` line and the known simulation limits |
 | AdvantageScope model | `ascope/`, made by `tools/step_to_glb.py` from the rev3 STEP |
-| CAD package rev3 | `C:\Users\klape\Downloads\robotA_cad_package_rev3_2026-11-23.zip` (not in the repo) |
+| Final CAD (package 3.2) | `RobotA_final_2026-11-23`, in the Downloads folder (not in the repo). CAN map, joints and code rules are the same as rev3 |
 
 ## Build and test (on Kevin's Windows PC)
 
@@ -64,7 +64,7 @@ In simulation every auto scores exactly its branches on both alliances.
 
 1. **The design doc is behind the code and the CAD:** no climber section, the old CAN map, keep-out table and setpoints. `docs/cad` and this file are the current word.
 2. **Only the robot can show:** servo pulses and directions, climber and wrist motor directions, encoder offset and sign, that the Talons keep their position across a code restart, the unstow band, tray opening and pawl lifting times, a real cage. All are marked `PLACEHOLDER(robot-check)` or listed in the README's "Set up the robot".
-3. **Weight:** 115.6 lb against the 115 lb limit, on the CAD's estimate.
+3. **Weight:** 115.7 lb against the 115 lb limit, on the CAD's estimate.
 4. **L1** (5 in, -35 degrees) is not on the CAD's setpoint list.
 
 ## Minor review findings still open

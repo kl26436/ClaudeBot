@@ -23,13 +23,18 @@ class ElevatorSimTest {
     private static final String LOST_ALERT = "Elevator lost its position: lower it by hand, then restart the robot code";
     private static final double SOFT_MAX_IN = 65.25;
     private static final double MAX_DOWN_ACCEL_IN_PER_S2 = 231.65;
-    private static final int ACCEL_WINDOW_TICKS = 3;
+    private static final int ACCEL_WINDOW_TICKS = 6;
+    /** Below this, even for a moment, the ropes would be close to going slack (1 g is free fall). */
+    private static final double NEAR_FREE_FALL_IN_PER_S2 = 0.9 * 386.09;
+
+    private static final int SHORT_WINDOW_TICKS = 3;
 
     private ElevatorIOSim sim;
     private Elevator elevator;
 
     private double maxHeight;
     private double minAccelInPerS2;
+    private double minShortAccelInPerS2;
     private final java.util.ArrayDeque<double[]> recentSamples = new java.util.ArrayDeque<>();
 
     @BeforeEach
@@ -57,9 +62,9 @@ class ElevatorSimTest {
 
     /**
      * Run tick by tick, tracking the highest carriage height and the lowest acceleration seen.
-     * Acceleration is the true velocity change over {@link #ACCEL_WINDOW_TICKS} ticks (60 ms) of
-     * physics time: the status signals arrive asynchronously, and their differences show spikes that
-     * the carriage never feels.
+     * Acceleration is the true velocity change over {@link #ACCEL_WINDOW_TICKS} ticks (about 130 ms) of
+     * physics time. The simulated controller runs on its own thread, and when that is held up for a few
+     * milliseconds it catches up after, so windows of 60 ms swing about 25 % either side of the profile.
      */
     private void runRecording(double seconds) {
         maxHeight = Math.max(maxHeight, elevator.carriageIn());
@@ -70,6 +75,12 @@ class ElevatorSimTest {
             recentSamples.addLast(new double[] {sim.physicsTimeS(), sim.trueVelocityInPerS()});
             if (recentSamples.size() > ACCEL_WINDOW_TICKS + 1) {
                 recentSamples.removeFirst();
+            }
+            if (recentSamples.size() > SHORT_WINDOW_TICKS) {
+                double[][] all = recentSamples.toArray(new double[0][]);
+                double[] first = all[all.length - 1 - SHORT_WINDOW_TICKS];
+                double[] last = all[all.length - 1];
+                minShortAccelInPerS2 = Math.min(minShortAccelInPerS2, (last[1] - first[1]) / (last[0] - first[0]));
             }
             if (recentSamples.size() == ACCEL_WINDOW_TICKS + 1) {
                 double[] first = recentSamples.peekFirst();
@@ -184,12 +195,14 @@ class ElevatorSimTest {
         runRecording(2.0);
         assertEquals(SOFT_MAX_IN, elevator.carriageIn(), 0.5, "should be at the top before coming down");
         minAccelInPerS2 = 0;
+        minShortAccelInPerS2 = 0;
         recentSamples.clear();
         elevator.setGoalIn(0);
         runRecording(2.0);
         assertTrue(minAccelInPerS2 < -100, "the move down should actually accelerate, got " + minAccelInPerS2);
-        // 15 % allowance for differentiation noise.
+        // 15 % allowance for the simulator's timing.
         assertTrue(minAccelInPerS2 >= -MAX_DOWN_ACCEL_IN_PER_S2 * 1.15, "downward accel " + minAccelInPerS2);
+        assertTrue(minShortAccelInPerS2 >= -NEAR_FREE_FALL_IN_PER_S2, "momentary downward accel " + minShortAccelInPerS2);
     }
 
     @Test

@@ -67,8 +67,7 @@ In simulation every auto scores exactly its branches on both alliances.
 1. **The design doc is behind the code and the CAD:** no climber section, the old CAN map, keep-out table and setpoints. `docs/cad` and this file are the current word.
 2. **Only the robot can show:** servo pulses and directions, climber and wrist motor directions, encoder offset and sign, that the Talons keep their position across a code restart, the unstow band, tray opening and pawl lifting times, a real cage. All are marked `PLACEHOLDER(robot-check)` or listed in the README's "Set up the robot".
 3. **Weight:** 116.5 lb against the 115 lb limit, on the CAD's estimate.
-4. **Package 3.3's joint list** has an older wrist row (-Y, -3 to 167) than the one built in Onshape; `docs/cad` keeps the newer row.
-5. **L1** (5 in, -35 degrees) is not on the CAD's setpoint list.
+4. **L1** (5 in, -35 degrees) is not on the CAD's setpoint list.
 
 ## Minor review findings still open
 

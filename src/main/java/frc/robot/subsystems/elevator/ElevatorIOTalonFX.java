@@ -30,10 +30,10 @@ import frc.robot.config.RobotConstants.ElevatorK;
  */
 public class ElevatorIOTalonFX implements ElevatorIO, AutoCloseable {
     // Control gains in volts, per motor rotation.
-    protected static final double KG = 0.46; // PLACEHOLDER(tuning)
+    protected static final double KG = 0.39; // PLACEHOLDER(tuning)
     protected static final double KS = 0.0; // PLACEHOLDER(tuning)
     protected static final double KV = 0.124; // PLACEHOLDER(tuning)
-    protected static final double KA = 0.0017; // PLACEHOLDER(tuning)
+    protected static final double KA = 0.0014; // PLACEHOLDER(tuning)
     protected static final double KP = 0.7; // PLACEHOLDER(tuning)
     protected static final double KD = 0.014; // PLACEHOLDER(tuning)
 

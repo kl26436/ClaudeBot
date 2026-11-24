@@ -357,6 +357,16 @@ public class SimulatedRobot extends SubsystemBase {
         return climber.trayDeg();
     }
 
+    /** Whether a coral is really aboard, whatever the sensor says. */
+    public synchronized boolean coralAboard() {
+        return coralIo.coralPresent();
+    }
+
+    /** Whether an algae is really aboard, whatever the sensor says. */
+    public synchronized boolean algaeAboard() {
+        return clawIo.algaePresent();
+    }
+
     /** Every coral scored, in order, each branch and level once. */
     public synchronized List<ScoreJudge.CoralScore> coralScored() {
         return List.copyOf(coralScored);

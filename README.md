@@ -124,6 +124,12 @@ selection or the alliance changes.
 | `field/` | Reef, station, barge and start poses for both alliances |
 | `sim/` | The simulated robot and the score judge |
 
+## The playbook
+
+[Team 4206 Playbook](https://kl26436.github.io/FRC-Playbook/) tells the whole story of this robot, from kickoff to code. The
+reasons and the math behind the code are in [docs/playbook](docs/playbook/code-decisions-and-math.md), with replays of
+every simulated auto. Regenerate the replays with `./gradlew simTest --tests '*AutoMatchTest*' -PreplayDir=docs/playbook/replays`.
+
 ## Credits
 
 ClaudeBot builds on work other teams and projects share in the open. Thank you to:

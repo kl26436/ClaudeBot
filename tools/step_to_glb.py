@@ -36,7 +36,7 @@ JOINTS = {
 TRAY_PARTS = re.compile(r"^F-(201|202|203|102|104|107|108|112)")
 # Parts of the wrist joint that turn with the wrist; the rest of that group rides on the carriage.
 TURNS_WITH_WRIST = re.compile(r"^(W-102|W-104|W-103|Shaft_end_screw.*wrist_stub|WCP-0800)")
-SKIP_GROUPS = ("Elevator_Rev_G:_Reference", "Wrist_reference")
+SKIP_GROUPS = ("Elevator:_Reference", "Wrist_reference")
 
 # First match wins: (pattern, RGBA, roughness).
 COLOURS = [
@@ -60,14 +60,19 @@ def leaves(node):
     return [s for k in kids for s in leaves(k)]
 
 
+def without_revision(group_label):
+    """"Elevator_Rev_H:_Stage_A" is "Elevator:_Stage_A" at any revision."""
+    return re.sub(r"_Rev_[A-Z]+(?=:)", "", group_label)
+
+
 def motion_group(group_label, label):
-    if group_label.startswith("Elevator_Rev_G:_Stage_A"):
+    if group_label.startswith("Elevator:_Stage_A"):
         return "stage A"
-    if group_label.startswith("Elevator_Rev_G:_Stage_B"):
+    if group_label.startswith("Elevator:_Stage_B"):
         return "stage B"
-    if group_label.startswith("Elevator_Rev_G:_Carriage"):
+    if group_label.startswith("Elevator:_Carriage"):
         return "carriage"
-    if group_label.startswith(("Elevator_Rev_G:_Wrist_joint", "Wrist:_carriage_side")):
+    if group_label.startswith(("Elevator:_Wrist_joint", "Wrist:_carriage_side")):
         return "wrist" if TURNS_WITH_WRIST.search(label) else "carriage"
     if group_label.startswith("Wrist_and_claw"):
         return "wrist"
@@ -158,7 +163,8 @@ def main():
     dropped = 0
     total = 0
     for group in assembly.children:
-        if group.label.startswith(SKIP_GROUPS):
+        group_label = without_revision(group.label)
+        if group_label.startswith(SKIP_GROUPS):
             continue
         for part in leaves(group):
             total += 1
@@ -166,7 +172,7 @@ def main():
             if size < SMALLEST_PART_IN:
                 dropped += 1
                 continue
-            g = motion_group(group.label, part.label)
+            g = motion_group(group_label, part.label)
             v, t = mesh(part)
             if len(t) == 0:
                 dropped += 1
@@ -174,6 +180,9 @@ def main():
             parts[g].setdefault(colour_of(part.label), []).append((to_zero_pose(v, g), t))
             count[g] += 1
     assert sum(count.values()) + dropped == total, "a part was lost"
+    empty = [g for g in GROUPS if count[g] == 0]
+    assert not empty, "no parts found for %s: have the STEP's group names changed? %s" % (
+        empty, [g.label for g in assembly.children])
     for i, g in enumerate(GROUPS):
         name = "model.glb" if i == 0 else "model_%d.glb" % (i - 1)
         path = os.path.join(out, name)

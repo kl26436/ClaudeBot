@@ -32,16 +32,14 @@ Rule: when a value is confirmed, change it and delete its `PLACEHOLDER` comment 
 
 Generated from the source on 2026-11-23. Re-check the count with `grep -rn "PLACEHOLDER(" src/main/java | wc -l`; a line with two reasons is one line.
 
-92 lines in `src/main/java` carry a placeholder.
+90 lines in `src/main/java` carry a placeholder.
 
 | Reason | Where | Value |
 | --- | --- | --- |
 | `drawing` | [RobotConstants.java:41](../src/main/java/frc/robot/config/RobotConstants.java#L41) | `COUPLING_RATIO = 50.0 / 14.0` |
-| `drawing` | [RobotConstants.java:81](../src/main/java/frc/robot/config/RobotConstants.java#L81) | `STAGE_A_LB = 5` |
-| `drawing` | [RobotConstants.java:82](../src/main/java/frc/robot/config/RobotConstants.java#L82) | `STAGE_B_LB = 4` |
-| `drawing` | [RobotConstants.java:102](../src/main/java/frc/robot/config/RobotConstants.java#L102) | `MOI_KGM2 = 0.39` |
-| `drawing` | [RobotConstants.java:115](../src/main/java/frc/robot/config/RobotConstants.java#L115) | `MOI_KGM2 = 0.0015` |
-| `drawing` | [RobotConstants.java:125](../src/main/java/frc/robot/config/RobotConstants.java#L125) | `MOI_KGM2 = 0.003` |
+| `drawing` | [RobotConstants.java:104](../src/main/java/frc/robot/config/RobotConstants.java#L104) | `MOI_KGM2 = 0.39` |
+| `drawing` | [RobotConstants.java:117](../src/main/java/frc/robot/config/RobotConstants.java#L117) | `MOI_KGM2 = 0.0015` |
+| `drawing` | [RobotConstants.java:127](../src/main/java/frc/robot/config/RobotConstants.java#L127) | `MOI_KGM2 = 0.003` |
 | `drawing` | [Setpoints.java:10](../src/main/java/frc/robot/config/Setpoints.java#L10) | `L1(5, -35),` |
 | `drawing` | [TunerConstants.java:63](../src/main/java/frc/robot/subsystems/drive/TunerConstants.java#L63) | `STEER_INERTIA_KGM2 = 0.01` |
 | `drawing` | [TunerConstants.java:64](../src/main/java/frc/robot/subsystems/drive/TunerConstants.java#L64) | `DRIVE_INERTIA_KGM2 = 0.01` |
@@ -56,8 +54,8 @@ Generated from the source on 2026-11-23. Re-check the count with `grep -rn "PLAC
 | `field-check` | [SwerveIOSim.java:47](../src/main/java/frc/robot/subsystems/drive/SwerveIOSim.java#L47) | `WHEEL_COF = 1.2` |
 | `robot-check` | [KeepOut.java:32](../src/main/java/frc/robot/config/KeepOut.java#L32) | `UNSTOW_MIN_IN = 0.75` |
 | `robot-check` | [KeepOut.java:33](../src/main/java/frc/robot/config/KeepOut.java#L33) | `UNSTOW_MAX_IN = 2.0` |
-| `robot-check` | [RobotConstants.java:183](../src/main/java/frc/robot/config/RobotConstants.java#L183) | `FUNNEL_OPEN_S = 1.0` |
-| `robot-check` | [RobotConstants.java:190](../src/main/java/frc/robot/config/RobotConstants.java#L190) | `PAWL_LIFT_S = 0.4` |
+| `robot-check` | [RobotConstants.java:185](../src/main/java/frc/robot/config/RobotConstants.java#L185) | `FUNNEL_OPEN_S = 1.0` |
+| `robot-check` | [RobotConstants.java:192](../src/main/java/frc/robot/config/RobotConstants.java#L192) | `PAWL_LIFT_S = 0.4` |
 | `robot-check` | [Setpoints.java:20](../src/main/java/frc/robot/config/Setpoints.java#L20) | `PROCESSOR(1.25, 15),` |
 | `robot-check` | [ClimberIOTalonFX.java:44](../src/main/java/frc/robot/subsystems/climber/ClimberIOTalonFX.java#L44) | `PAWL_DOWN_US = (int) (1500 + PAWL_HALF_US)` |
 | `robot-check` | [ClimberIOTalonFX.java:45](../src/main/java/frc/robot/subsystems/climber/ClimberIOTalonFX.java#L45) | `PAWL_LIFTED_US = (int) (1500 - PAWL_HALF_US)` |
@@ -76,12 +74,12 @@ Generated from the source on 2026-11-23. Re-check the count with `grep -rn "PLAC
 | `tuning` | [ScoreCommands.java:33](../src/main/java/frc/robot/commands/ScoreCommands.java#L33) | `MIN_RELEASE_S = 0.25` |
 | `tuning` | [ScoreCommands.java:55](../src/main/java/frc/robot/commands/ScoreCommands.java#L55) | `ALGAE_SPEED_MPS = 2.0` |
 | `tuning` | [RobotConstants.java:77](../src/main/java/frc/robot/config/RobotConstants.java#L77) | `CRUISE_IN_PER_S = 110` |
-| `tuning` | [RobotConstants.java:103](../src/main/java/frc/robot/config/RobotConstants.java#L103) | `CRUISE_DEG_PER_S = 400` |
-| `tuning` | [RobotConstants.java:104](../src/main/java/frc/robot/config/RobotConstants.java#L104) | `ACCEL_DEG_PER_S2 = 1600` |
-| `tuning` | [RobotConstants.java:157](../src/main/java/frc/robot/config/RobotConstants.java#L157) | `TENSION_LOAD_A = 20` |
-| `tuning` | [RobotConstants.java:169](../src/main/java/frc/robot/config/RobotConstants.java#L169) | `CRUISE_DEG_PER_S = 60` |
-| `tuning` | [RobotConstants.java:170](../src/main/java/frc/robot/config/RobotConstants.java#L170) | `ACCEL_DEG_PER_S2 = 240` |
-| `tuning` | [RobotConstants.java:174](../src/main/java/frc/robot/config/RobotConstants.java#L174) | `STALL_A = 55` |
+| `tuning` | [RobotConstants.java:105](../src/main/java/frc/robot/config/RobotConstants.java#L105) | `CRUISE_DEG_PER_S = 400` |
+| `tuning` | [RobotConstants.java:106](../src/main/java/frc/robot/config/RobotConstants.java#L106) | `ACCEL_DEG_PER_S2 = 1600` |
+| `tuning` | [RobotConstants.java:159](../src/main/java/frc/robot/config/RobotConstants.java#L159) | `TENSION_LOAD_A = 20` |
+| `tuning` | [RobotConstants.java:171](../src/main/java/frc/robot/config/RobotConstants.java#L171) | `CRUISE_DEG_PER_S = 60` |
+| `tuning` | [RobotConstants.java:172](../src/main/java/frc/robot/config/RobotConstants.java#L172) | `ACCEL_DEG_PER_S2 = 240` |
+| `tuning` | [RobotConstants.java:176](../src/main/java/frc/robot/config/RobotConstants.java#L176) | `STALL_A = 55` |
 | `tuning` | [Superstructure.java:45](../src/main/java/frc/robot/subsystems/Superstructure.java#L45) | `FULL_SPEED_MAX_IN = 23.0` |
 | `tuning` | [Superstructure.java:47](../src/main/java/frc/robot/subsystems/Superstructure.java#L47) | `MIN_SPEED_SCALE = 0.35` |
 | `tuning` | [Superstructure.java:50](../src/main/java/frc/robot/subsystems/Superstructure.java#L50) | `TIP_SAFETY = 0.8` |
@@ -113,13 +111,13 @@ Generated from the source on 2026-11-23. Re-check the count with `grep -rn "PLAC
 | `tuning` | [TunerConstants.java:60](../src/main/java/frc/robot/subsystems/drive/TunerConstants.java#L60) | `BR_OFFSET_ROT = 0.0` |
 | `tuning` | [TunerConstants.java:65](../src/main/java/frc/robot/subsystems/drive/TunerConstants.java#L65) | `STEER_FRICTION_V = 0.2` |
 | `tuning` | [TunerConstants.java:66](../src/main/java/frc/robot/subsystems/drive/TunerConstants.java#L66) | `DRIVE_FRICTION_V = 0.2` |
-| `tuning` | [ElevatorIOTalonFX.java:33](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L33) | `KG = 0.46` |
+| `tuning` | [ElevatorIOTalonFX.java:33](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L33) | `KG = 0.39` |
 | `tuning` | [ElevatorIOTalonFX.java:34](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L34) | `KS = 0.0` |
 | `tuning` | [ElevatorIOTalonFX.java:35](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L35) | `KV = 0.124` |
-| `tuning` | [ElevatorIOTalonFX.java:36](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L36) | `KA = 0.0017` |
+| `tuning` | [ElevatorIOTalonFX.java:36](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L36) | `KA = 0.0014` |
 | `tuning` | [ElevatorIOTalonFX.java:37](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L37) | `KP = 0.7` |
 | `tuning` | [ElevatorIOTalonFX.java:38](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L38) | `KD = 0.014` |
-| `tuning` | [Wrist.java:39](../src/main/java/frc/robot/subsystems/wrist/Wrist.java#L39) | `RESEED_DEG = 0.5` |
+| `tuning` | [Wrist.java:40](../src/main/java/frc/robot/subsystems/wrist/Wrist.java#L40) | `RESEED_DEG = 0.5` |
 | `tuning` | [WristIOTalonFX.java:31](../src/main/java/frc/robot/subsystems/wrist/WristIOTalonFX.java#L31) | `KG = 0.30` |
 | `tuning` | [WristIOTalonFX.java:32](../src/main/java/frc/robot/subsystems/wrist/WristIOTalonFX.java#L32) | `KS = 0.0` |
 | `tuning` | [WristIOTalonFX.java:33](../src/main/java/frc/robot/subsystems/wrist/WristIOTalonFX.java#L33) | `KV = 7.45` |

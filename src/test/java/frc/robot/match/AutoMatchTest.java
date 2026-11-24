@@ -14,6 +14,7 @@ import frc.robot.field.StartPose;
 import frc.robot.sim.ScoreJudge.CoralScore;
 import frc.robot.testutil.AlertProbe;
 import frc.robot.testutil.AutoHarness;
+import frc.robot.testutil.AutoReplay;
 import frc.robot.testutil.RobotFixture;
 import frc.robot.testutil.SimHarness;
 import java.util.List;
@@ -40,10 +41,21 @@ class AutoMatchTest {
 
     @ParameterizedTest
     @MethodSource("everyAutoOnBothAlliances")
-    void autoScoresWhatItClaims(Auto auto, Alliance alliance) {
+    void autoScoresWhatItClaims(Auto auto, Alliance alliance) throws java.io.IOException {
         var h = AutoHarness.start(auto, alliance);
         SimHarness.takeStepStats();
-        SimHarness.run(15.0);
+        var replayFolder = AutoReplay.folder();
+        if (replayFolder == null || alliance != Alliance.Blue || auto == Auto.IDLE) {
+            SimHarness.run(15.0);
+        } else {
+            var replay = new AutoReplay();
+            replay.sample(h, 0);
+            for (int i = 1; i <= Math.round(15.0 / AutoReplay.STEP_S); i++) {
+                SimHarness.run(AutoReplay.STEP_S);
+                replay.sample(h, i * AutoReplay.STEP_S);
+            }
+            replay.write(replayFolder, auto, h.sim().coralScored());
+        }
         var scored = h.sim().coralScored();
         System.out.println("AUTO " + auto + " " + alliance + ": scored " + scored.stream()
                 .map(s -> s.branch() + String.format("@%.1fs", s.timeS())).toList() + "; " + SimHarness.takeStepStats());

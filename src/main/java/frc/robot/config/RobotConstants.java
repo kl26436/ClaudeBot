@@ -41,8 +41,8 @@ public final class RobotConstants {
         public static final double COUPLING_RATIO = 50.0 / 14.0; // PLACEHOLDER(drawing)
         public static final double BUMPER_FACE_FROM_CENTRE_IN = 34.5 / 2;
         public static final double MAX_SPEED_MPS = 4.67;
-        /** On the field with battery and bumpers (drawing R-001, rev3; estimated, not weighed). */
-        public static final double ROBOT_MASS_LB = 142.8;
+        /** On the field with battery and bumpers (drawing R-001, rev3.2; estimated, not weighed). */
+        public static final double ROBOT_MASS_LB = 142.9;
         /** Starting current limits from drawing EL-001. */
         public static final double DRIVE_STATOR_LIMIT_A = 60;
 
@@ -77,9 +77,11 @@ public final class RobotConstants {
         public static final double CRUISE_IN_PER_S = 110; // PLACEHOLDER(tuning)
         public static final double PIVOT_REST_HEIGHT_IN = 24.5;
         public static final double PIVOT_X_IN = 4.5;
-        public static final double CARRIAGE_GROUP_LB = 25;
-        public static final double STAGE_A_LB = 5; // PLACEHOLDER(drawing)
-        public static final double STAGE_B_LB = 4; // PLACEHOLDER(drawing)
+        // Modelled weights that move with each stage (CAD package 3.2); fasteners and game pieces not included.
+        // The carriage group is the carriage with the whole wrist and claw.
+        public static final double CARRIAGE_GROUP_LB = 19.83;
+        public static final double STAGE_A_LB = 5.71;
+        public static final double STAGE_B_LB = 4.68;
         public static final double STATOR_LIMIT_A = 60;
         public static final double HOME_VOLTS = -1.5;
         public static final double HOME_TIMEOUT_S = 3.0;

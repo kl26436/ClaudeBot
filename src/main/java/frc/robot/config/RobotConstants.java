@@ -41,8 +41,8 @@ public final class RobotConstants {
         public static final double COUPLING_RATIO = 50.0 / 14.0; // PLACEHOLDER(drawing)
         public static final double BUMPER_FACE_FROM_CENTRE_IN = 34.5 / 2;
         public static final double MAX_SPEED_MPS = 4.67;
-        /** On the field with battery and bumpers (drawing R-001, rev3.2; estimated, not weighed). */
-        public static final double ROBOT_MASS_LB = 142.9;
+        /** On the field with battery and bumpers (drawing R-001, rev3.3; estimated, not weighed). */
+        public static final double ROBOT_MASS_LB = 143.8;
         /** Starting current limits from drawing EL-001. */
         public static final double DRIVE_STATOR_LIMIT_A = 60;
 
@@ -50,11 +50,11 @@ public final class RobotConstants {
 
         /**
          * Steady acceleration that lifts the far wheels, in g, by carriage height (inches): the lowest of
-         * forward, back and sideways on drawing R-001 (rev3 balance table, battery and bumpers on).
+         * forward, back and sideways on drawing R-001 (rev3.3 balance table, battery and bumpers on).
          */
         public static final double[] TIP_CARRIAGE_IN = {0, 33, 66};
 
-        public static final double[] TIP_ACCEL_G = {1.07, 0.71, 0.50};
+        public static final double[] TIP_ACCEL_G = {1.06, 0.71, 0.50};
     }
 
     /** Elevator carriage. Units are inches of carriage travel. */
@@ -145,8 +145,8 @@ public final class RobotConstants {
 
         public static final double CLIMBED_TOL_DEG = 1.5;
         public static final double LEVEL_TOL_DEG = 1.0;
-        /** One ratchet tooth of fork travel. */
-        public static final double TOOTH_DEG = 3.6;
+        /** One tooth of fork travel: the WCP-0405 wheel has 18, and the fork turns 6.22 times slower than the spool. */
+        public static final double TOOTH_DEG = 360.0 / 18 / 6.22;
 
         /**
          * Wound in this far to take the load off the pawls before lifting them: half a tooth, as far as it

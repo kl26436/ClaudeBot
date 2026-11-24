@@ -1,7 +1,7 @@
 # Simulated runs, for animating
 
-Recordings of the robot code running in simulation, ten rows a second: where the robot and its mechanisms
-really were, not what its sensors thought. Small enough to load in a page (about 6 KB each).
+Recordings of the robot code running in simulation, ten rows a second (the driver cycle and the vision runs twenty, the elevator move fifty): where the robot and its mechanisms
+really were, not what its sensors thought. Small enough to load in a page (3 to 30 KB each).
 
 | File | What it is |
 | --- | --- |
@@ -9,13 +9,17 @@ really were, not what its sensors thought. Small enough to load in a page (about
 | `three_right_ecd.json`, `three_left_jlk.json` | The three-coral autos |
 | `centre_h_algae.json` | A coral, then the algae off that face and into the net |
 | `climb.json` | One deep climb, from the climb button to hanging |
+| `teleop_cycle.json` | A driver cycle: one command picks up at the right station, one scores on branch D at L4 |
+| `vision_fix.json` | The position starts 0.43 m wrong; the camera puts it right |
+| `vision_rejected.json` | The position starts 1.26 m wrong; the camera's fix is refused for 0.3 s, then believed |
+| `elevator_move.json` | Stow to L4 and back at every 20 ms loop, with volts and amps |
 
-All autos are blue. Label them *simulated*.
+All are blue. Label them *simulated*.
 
 Regenerate them, after any change to the code, with
 
 ```
-./gradlew simTest --tests '*AutoMatchTest*' --tests '*ClimbReplayTest*' -PreplayDir=docs/playbook/replays
+./gradlew simTest --tests '*AutoMatchTest*' --tests '*ReplayTest*' -PreplayDir=docs/playbook/replays
 ```
 
 From another site, copy them at build time, or fetch
@@ -48,6 +52,21 @@ backs onto the cage, which the recording does not show: the robot stays where it
 | `coral`, `algae` | 1 while one is really aboard |
 | `fork_deg` | Climber fork: 90 stowed, 0 level and pointing back |
 | `tray_deg` | Funnel tray: 0 closed, 90 open |
+
+The driver cycle and vision runs add these. Values in quotes are listed in the file, under `phases` and `vision_states`,
+and a row holds the number of one.
+
+| Column | Meaning |
+| --- | --- |
+| `phase` | What the commands are doing: `idle`, `pickup`, `route`, `raise`, `release`, `stow` |
+| `goal_carriage_in`, `goal_wrist_deg` | Where the planner sends each axis now |
+| `target_x_m`, `target_y_m` | Where the drive is heading now |
+| `est_x_m`, `est_y_m` | Where the robot thinks it is (`x_m`, `y_m` is where it really is) |
+| `tag`, `tx_deg`, `tag_height_px` | The tag the camera sees (-1 for none), how far right of centre, how tall in pixels |
+| `vision` | What was done with that sighting, such as `fix applied` or `fix too far from the estimate` |
+| `fix_x_m`, `fix_y_m` | Where the sighting puts the robot, or null |
+
+`tags` in those files lists every reef tag's place on the field.
 
 ## Moving the 3D model
 

@@ -9,22 +9,22 @@ Every joint that moves, with the limits that make the stops work. Zero = the pos
 | Joint | Type | Axis: point, direction | Min | Max | Stops | |
 |---|---|---|---|---|---|---|
 | Fork pivot (both forks on the one axle) | revolute | (-13.50, 0.00, 16.00), +Y | -92 deg | 7 deg | fork level (psi -2): stop bolt S0 + spacer CL-308 on each tower plate; the rope sets 0 in a climb / psi 97: stop bolt S97 + spacer CL-308 (the climb itself ends at 88 in code) | needed |
-| Pawl, left | revolute | (-10.89, 4.40, 8.29), +Y | 0 deg | 16 deg | down in the ratchet wheel CL-303 (spring holds it there) / lifted 16 deg by the servo (14 frees the tooth) | needed |
+| Pawl, left | revolute | (-10.44, 5.06, 7.90), +Y | 0 deg | 16 deg | down in the WCP-0405 ratchet wheel (spring holds it there) / lifted 16 deg by the servo (clears the teeth by 0.10) | needed |
 | Gate finger, left | revolute | (-6.20, 4.44, 27.45), +X | 0 deg | 90 deg | closed: across the fork opening, against the +rho end of the arm plate slot (it cannot open outward) / folded 90 back through the slot into block CL-205 (tip towards the axle) | needed |
-| Pawl release linkage, left | revolute x3 (closed loop) | (-9.35, 4.40, 10.12), +Y | free |  | follows the pawl / follows the pawl | optional |
-| Pawl, right | revolute | (-10.89, -4.40, 8.29), +Y | 0 deg | 16 deg | down in the ratchet wheel CL-303 (spring holds it there) / lifted 16 deg by the servo (14 frees the tooth) | needed |
+| Pawl release linkage, left | revolute x3 (closed loop) | (-10.16, 5.52, 9.80), +Y | free |  | follows the pawl / follows the pawl | optional |
+| Pawl, right | revolute | (-10.44, -5.06, 7.90), +Y | 0 deg | 16 deg | down in the WCP-0405 ratchet wheel (spring holds it there) / lifted 16 deg by the servo (clears the teeth by 0.10) | needed |
 | Gate finger, right | revolute | (-6.20, -4.44, 27.45), +X | -90 deg | 0 deg | closed: across the fork opening, against the +rho end of the arm plate slot (it cannot open outward) / folded 90 back through the slot into block CL-205 (tip towards the axle) | needed |
-| Pawl release linkage, right | revolute x3 (closed loop) | (-9.35, -4.40, 10.12), +Y | free |  | follows the pawl / follows the pawl | optional |
+| Pawl release linkage, right | revolute x3 (closed loop) | (-10.16, -5.52, 9.80), +Y | free |  | follows the pawl / follows the pawl | optional |
 | Spools, ratchet wheels, gearbox outputs | revolute | (-9.44, 0.00, 7.90), +Y | free |  | none (winds both ways; the pawl holds it in the match) / none | optional |
 
 - Fork pivot (both forks on the one axle): uploaded stowed (psi 90). Plus about +Y (robot left) lowers the fork towards the back: min -92 = fork level, max +7 = against the 97 stops. Moves: fork group: CL-201 arm plates, fork tie rods, gate blocks CL-205 and fingers CL-203, entry guides CL-206, spring hubs CL-208, bronze bearings. Against: towers CL-101, the hex axle (it does not turn: the hex holes in the towers lock it), spools, gearboxes, frame.
-- Pawl, left: plus about +Y (robot left) lifts the pawl. Moves: CL-304-L pawl. Against: tower CL-101-L (on spacer 92415A662, #10 screw).
+- Pawl, left: plus about +Y (robot left) lifts the pawl. Moves: WCP-0405 pawl (climber left). Against: tower CL-101-L (turns on the rear gearbox spacer CL-306).
 - Gate finger, left: axis = the vertical #10 screw at psi 0, along +X with the fork stowed. Folding turns the left finger + about +X. Moves: CL-203 gate finger (left fork). Against: gate block CL-205 / arm plate CL-201 (moves with the fork).
-- Pawl release linkage, left: horn about the servo shaft, link on the horn pin, link on the pawl tail pin: the pawl limit then drives the servo horn. Moves: servo horn, CL-307 link. Against: servo case on the tower; link pins at the horn [-9.758, 10.41] and the pawl tail [-11.385, 8.784] (X, Z).
-- Pawl, right: plus about +Y (robot left) lifts the pawl. Moves: CL-304-R pawl. Against: tower CL-101-R (on spacer 92415A662, #10 screw).
+- Pawl release linkage, left: horn about the servo shaft, link on the horn pin, link on the pawl tail pin: the pawl limit then drives the servo horn. Moves: servo horn, CL-311 link. Against: servo case on the tower; link pins at the horn [-10.646, 9.928] and the pawl tail [-11.19, 7.9] (X, Z).
+- Pawl, right: plus about +Y (robot left) lifts the pawl. Moves: WCP-0405 pawl (climber right). Against: tower CL-101-R (turns on the rear gearbox spacer CL-306).
 - Gate finger, right: axis = the vertical #10 screw at psi 0, along +X with the fork stowed. Folding turns the right finger - about +X. Moves: CL-203 gate finger (right fork). Against: gate block CL-205 / arm plate CL-201 (moves with the fork).
-- Pawl release linkage, right: horn about the servo shaft, link on the horn pin, link on the pawl tail pin: the pawl limit then drives the servo horn. Moves: servo horn, CL-307 link. Against: servo case on the tower; link pins at the horn [-9.758, 10.41] and the pawl tail [-11.385, 8.784] (X, Z).
-- Spools, ratchet wheels, gearbox outputs: no limits: leave fastened unless you want to animate the winch. Moves: spool + CL-303 wheel each side. Against: axle / gearbox.
+- Pawl release linkage, right: horn about the servo shaft, link on the horn pin, link on the pawl tail pin: the pawl limit then drives the servo horn. Moves: servo horn, CL-311 link. Against: servo case on the tower; link pins at the horn [-10.646, 9.928] and the pawl tail [-11.19, 7.9] (X, Z).
+- Spools, ratchet wheels, gearbox outputs: no limits: leave fastened unless you want to animate the winch. Moves: spool + WCP-0405 wheel each side. Against: axle / gearbox.
 
 ## Funnel
 

@@ -15,7 +15,7 @@ decisions that override the plan's text, and what is still open.
 | Wiring | `docs/wiring.md`, from the rev3 CAN map |
 | Unconfirmed values | `docs/open-numbers.md`: every `PLACEHOLDER(...)` line and the known simulation limits |
 | AdvantageScope model | `ascope/`, made by `tools/step_to_glb.py` from the rev3 STEP |
-| Final CAD (package 3.2) | `RobotA_final_2026-11-23`, in the Downloads folder (not in the repo). CAN map, joints and code rules are the same as rev3 |
+| CAD package 3.3 | `robotA_cad_package_rev3.3_2026-11-23.zip`, in the Downloads folder (not in the repo). CAN map and code rules are the same as rev3; new ratchet (3.2 degrees a tooth), second mast brace |
 
 ## Build and test (on Kevin's Windows PC)
 
@@ -60,12 +60,15 @@ In simulation every auto scores exactly its branches on both alliances.
 18. **Climb.** D-pad right, held: the CAD's sequence with one change, pawls down as soon as the fork is level instead of after the cage seats. A second hold winds in; D-pad left lets an empty fork back down. The funnel needs the button held 0.7 s in the climb pose, and on a field the last 30 s. An algae aboard is dropped first. The pawls lift only once the rope has held still with next to no current, so a hanging robot cannot be let down. Once the funnel fires the mechanism stays in the climb pose, across code restarts (`CommitMemory`, on the roboRIO's disk), until the pit reset or the next match with the fork stowed. A restart that cannot tell where the fork is (a motor controller that lost power) stops the winch for good.
 19. **Wrist faults in a climb.** Once the funnel has fired, a wrist that was trusted then stays trusted on its motor's own count if the encoder is lost or slips (`Wrist.setHoldOnMotor`): it only has to hold still, and letting go would drop it into the climber's way. The alert still shows. A wrist motor that reboots or stops answering blocks a first pull, because the wrist is then limp and in the way; a pull already begun goes on, and may be restarted unless the wrist is known to be out of the pose.
 
+20. **Vision.** A fix more than 1 m from the estimate is believed only after it has agreed with itself, within 0.25 m, for 0.3 s without a break. The route is then planned again, and a release waits at most 0.6 s while the camera disputes the position.
+
 ## Open problems
 
 1. **The design doc is behind the code and the CAD:** no climber section, the old CAN map, keep-out table and setpoints. `docs/cad` and this file are the current word.
 2. **Only the robot can show:** servo pulses and directions, climber and wrist motor directions, encoder offset and sign, that the Talons keep their position across a code restart, the unstow band, tray opening and pawl lifting times, a real cage. All are marked `PLACEHOLDER(robot-check)` or listed in the README's "Set up the robot".
-3. **Weight:** 115.7 lb against the 115 lb limit, on the CAD's estimate.
-4. **L1** (5 in, -35 degrees) is not on the CAD's setpoint list.
+3. **Weight:** 116.5 lb against the 115 lb limit, on the CAD's estimate.
+4. **Package 3.3's joint list** has an older wrist row (-Y, -3 to 167) than the one built in Onshape; `docs/cad` keeps the newer row.
+5. **L1** (5 in, -35 degrees) is not on the CAD's setpoint list.
 
 ## Minor review findings still open
 

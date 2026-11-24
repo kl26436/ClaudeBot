@@ -1,6 +1,7 @@
 package frc.robot.commands;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -48,6 +49,12 @@ public final class ScoreCommands {
         return (seenGone && t >= MIN_RELEASE_S) || t >= RELEASE_TIMEOUT_S;
     }
 
+    /** A camera that disputes the position at the target holds the release this long, no more. */
+    static final double DOUBT_LIMIT_S = 0.6; // PLACEHOLDER(tuning)
+
+    /** An estimate that moves this far in one loop has been corrected: the route is planned again from there. */
+    static final double REPLAN_JUMP_M = 0.4;
+
     /** A route's via point counts as passed this close to it. */
     static final double VIA_PASSED_M = 0.25;
 
@@ -56,7 +63,8 @@ public final class ScoreCommands {
 
     /**
      * Drive {@link Reef#route} to the branch, raise to the level within {@link #RAISE_DISTANCE_M},
-     * and release once the drive and the mechanism are both on target. Finishes when the coral is
+     * and release once the drive and the mechanism are both on target and the camera does not dispute
+     * where that is (for at most {@link #DOUBT_LIMIT_S}). Finishes when the coral is
      * gone or {@link #RELEASE_TIMEOUT_S} after the release. On end or interrupt: clear the release
      * and the vision face, and stow. Ends at once if the alliance is unknown.
      */
@@ -69,11 +77,13 @@ public final class ScoreCommands {
         return new RouteCommand(r, a -> Reef.scoringPose(a, branch.get()), maxSpeedMps, teleopGains) {
             private Wanted chosen;
             private double releasedAtS;
+            private double readySinceS;
 
             @Override
             void start(Alliance a, Pose2d target) {
                 chosen = level.get();
                 releasedAtS = Double.NaN;
+                readySinceS = Double.NaN;
                 r.vision().setTargetFace(Optional.of(Reef.nearestFace(a, target.getTranslation())));
             }
 
@@ -83,9 +93,17 @@ public final class ScoreCommands {
                 if (distanceToTargetM() <= RAISE_DISTANCE_M && s.wanted() != chosen) {
                     s.setWanted(chosen);
                 }
-                if (Double.isNaN(releasedAtS) && onFinalLeg() && r.drive().atTarget() && s.atPose()) {
-                    s.requestRelease(true);
-                    releasedAtS = Timer.getFPGATimestamp();
+                double now = Timer.getFPGATimestamp();
+                if (!(onFinalLeg() && r.drive().atTarget() && s.atPose())) {
+                    readySinceS = Double.NaN;
+                } else if (Double.isNaN(releasedAtS)) {
+                    if (Double.isNaN(readySinceS)) {
+                        readySinceS = now;
+                    }
+                    if (!r.vision().doubtsThePosition() || now - readySinceS >= DOUBT_LIMIT_S) {
+                        s.requestRelease(true);
+                        releasedAtS = now;
+                    }
                 }
             }
 
@@ -216,6 +234,8 @@ public final class ScoreCommands {
         private List<Pose2d> route = List.of();
         private int leg;
         private Pose2d target;
+        private Alliance alliance;
+        private Translation2d lastAt;
         private boolean noAlliance;
 
         RouteCommand(RobotContainer r, Function<Alliance, Pose2d> targetFor, double maxSpeedMps, boolean teleopGains) {
@@ -244,15 +264,21 @@ public final class ScoreCommands {
 
         @Override
         public final void initialize() {
-            Optional<Alliance> alliance = RobotState.get().alliance();
-            noAlliance = alliance.isEmpty();
+            Optional<Alliance> known = RobotState.get().alliance();
+            noAlliance = known.isEmpty();
             if (noAlliance) {
                 return;
             }
-            target = targetFor.apply(alliance.get());
-            route = Reef.route(alliance.get(), r.drive().pose().getTranslation(), target);
+            alliance = known.get();
+            target = targetFor.apply(alliance);
+            start(alliance, target);
+            plan();
+        }
+
+        private void plan() {
+            lastAt = r.drive().pose().getTranslation();
+            route = Reef.route(alliance, lastAt, target);
             leg = 0;
-            start(alliance.get(), target);
             driveLeg();
         }
 
@@ -266,6 +292,11 @@ public final class ScoreCommands {
                 return;
             }
             SwerveSubsystem drive = r.drive();
+            Translation2d at = drive.pose().getTranslation();
+            if (at.getDistance(lastAt) > REPLAN_JUMP_M) {
+                plan(); // the camera has moved the estimate: the old route started somewhere else
+            }
+            lastAt = at;
             if (!onFinalLeg()
                     && drive.pose().getTranslation().getDistance(route.get(leg).getTranslation()) <= VIA_PASSED_M) {
                 leg++;

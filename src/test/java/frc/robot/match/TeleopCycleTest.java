@@ -78,6 +78,18 @@ class TeleopCycleTest {
         r.sim().setCoralSensorConnected(true);
     }
 
+    /** The driver presses score with the position estimate 1.26 m out, as after a hard knock. */
+    @Test
+    void aPositionFarOutIsPutRightBeforeScoring() {
+        var start = Station.pickupPose(Alliance.Blue, Station.Side.RIGHT);
+        startAt(start, true);
+        r.drive().resetPose(new Pose2d(start.getX() + 1.2, start.getY() + 0.4, start.getRotation()));
+        schedule(ScoreCommands.alignAndScore(r, () -> Reef.Branch.C, () -> Wanted.L4, 3.0, true));
+        SimHarness.run(8.0);
+        assertEquals(List.of(Reef.Branch.C), r.sim().coralScored().stream().map(CoralScore::branch).toList());
+        assertEquals(Wanted.STOW, r.superstructure().wanted());
+    }
+
     @Test
     void releaseAwayFromTheReefDoesNotScore() {
         startAt(new Pose2d(2.5, 6.5, edu.wpi.first.math.geometry.Rotation2d.kZero), true);

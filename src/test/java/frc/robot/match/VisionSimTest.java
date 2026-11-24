@@ -1,6 +1,7 @@
 package frc.robot.match;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import edu.wpi.first.hal.AllianceStationID;
@@ -116,12 +117,81 @@ class VisionSimTest {
     }
 
     @Test
-    void rejectsAFixFarFromTheEstimate() {
+    void aFixFarFromTheEstimateIsNotTrustedAtOnce() {
         placeAt(oneMetreFromFace(0));
         drive.resetPose(shifted(sim.truePose(), 1.2, 0.4));
         vision.setTargetFace(Optional.of(0));
-        SimHarness.run(0.3);
-        assertTrue(vision.lastFix().isEmpty(), "a fix over 1 m from the estimate is not trusted");
+        SimHarness.run(0.2);
+        assertTrue(vision.lastFix().isEmpty(), "a fix over 1 m from the estimate is not trusted on sight");
+        assertTrue(vision.doubtsThePosition(), "but the position is in doubt");
+    }
+
+    /**
+     * A bad sighting jumps about; a wrong position estimate does not. When the camera keeps saying the
+     * same thing, it is the estimate that is wrong.
+     */
+    @Test
+    void aFarFixThatKeepsAgreeingWithItselfIsBelieved() {
+        placeAt(oneMetreFromFace(0));
+        drive.resetPose(shifted(sim.truePose(), 1.2, 0.4));
+        vision.setTargetFace(Optional.of(0));
+        SimHarness.run(0.8);
+        assertTrue(vision.lastFix().isPresent());
+        assertEquals(0, errorM(), 0.06);
+        assertFalse(vision.doubtsThePosition());
+    }
+
+    /** A camera whose reported tag size the test sets each loop. */
+    private static final class ScriptedIO implements VisionIO {
+        java.util.function.IntFunction<Double> heightPx;
+        java.util.function.IntPredicate seen = i -> true;
+        int loop = 0;
+
+        @Override
+        public void updateInputs(VisionIOInputs in) {
+            in.connected = true;
+            in.hasTarget = seen.test(loop);
+            in.tagId = Reef.tagId(Alliance.Blue, 0);
+            in.txDeg = 0;
+            in.heightPx = heightPx.apply(loop);
+            loop++;
+        }
+    }
+
+    private void withCamera(ScriptedIO io, java.util.function.Consumer<Vision> body) {
+        var v = new Vision(io, drive); // registered with the scheduler, so the harness runs its periodic
+        try {
+            v.setTargetFace(Optional.of(0));
+            body.accept(v);
+        } finally {
+            edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance().unregisterSubsystem(v);
+        }
+    }
+
+    /** The robot really is 3 m from the tag; this camera says nearer, by a different amount each loop. */
+    @Test
+    void sightingsThatJumpAboutAreNeverBelieved() {
+        placeAt(Reef.tagPose(Alliance.Blue, 0).transformBy(new Transform2d(3.0, 0, Rotation2d.k180deg)));
+        var io = new ScriptedIO();
+        io.heightPx = i -> i % 2 == 0 ? 120.0 : 200.0;
+        withCamera(io, v -> {
+            SimHarness.run(2.0);
+            assertTrue(v.lastFix().isEmpty());
+            assertEquals(0, errorM(), 0.05);
+        });
+    }
+
+    @Test
+    void aBurstOfBadSightingsIsNotEnough() {
+        placeAt(Reef.tagPose(Alliance.Blue, 0).transformBy(new Transform2d(3.0, 0, Rotation2d.k180deg)));
+        var io = new ScriptedIO();
+        io.heightPx = i -> 120.0;
+        io.seen = i -> i % 20 < 8; // 0.16 s at a time, then nothing for a while
+        withCamera(io, v -> {
+            SimHarness.run(2.0);
+            assertTrue(v.lastFix().isEmpty());
+            assertEquals(0, errorM(), 0.05);
+        });
     }
 
     @Test

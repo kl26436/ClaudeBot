@@ -15,7 +15,7 @@ Rule: when a value is confirmed, change it and delete its `PLACEHOLDER` comment 
 
 ## Known simulation limits
 
-- **Elevator cruise speed.** 110 in/s, as designed. It was held at 65 because at 110 the Motion Magic reference in the Phoenix simulator stopped slowing down and the carriage reached the top stop. The cause was working in inches through `SensorToMechanismRatio` (a ratio below 1); with Phoenix in rotor rotations and the conversion in `ElevatorIOTalonFX` the profile is normal. The profile asks for 0.55 g so that the carriage, catching up with it, stays near the 0.6 g cap. On the robot, raise the speed in steps all the same.
+- **Elevator cruise speed.** 110 in/s, as designed. It was held at 65 because at 110 the Motion Magic reference in the Phoenix simulator stopped slowing down and the carriage reached the top stop. The cause was working in inches through `SensorToMechanismRatio` (a ratio below 1); with Phoenix in rotor rotations and the conversion in `ElevatorIOTalonFX` the profile is normal. The profile asks for 0.55 g so that the carriage, catching up with it, stays near the 0.6 g cap. It holds on this Windows PC, idle or with every core loaded. In a cloud Linux sandbox the simulated reference still stays at cruise and stops dead at the target, and `ElevatorSimTest.neverPassesTheSoftLimit` and two `SuperstructureSimTest` tests fail there; the cause is not known, so make recordings on this PC. On the robot, raise the speed in steps.
 - **CANrange dropout.** Phoenix simulates a CANrange's distance (`CANrangeSimState.setDistance`) but cannot take one off the bus. `CoralRollersIOSim.setRangeConnected` and `AlgaeClawIOSim.setRangeConnected` fake the dropout at the IO layer by reporting `rangeConnected = false`; the distance signal is still the simulated one.
 - **Claw hold at stall.** Stalled on an algae, the 1.5 V claw hold voltage would draw about 45 A per motor, so the 30 A stator limit holds it to about 0.8 V. Intake (6 V) is limited the same way. Check on the robot that 30 A grips an algae firmly enough; if it does, the hold voltage could drop to about 0.8 V with no loss of grip.
 - **Swerve FOC follows the licence.** CTRE's built-in field-centric requests run in native code and always ask the modules for FOC. `FieldSpeedsRequest` builds the module requests itself with `EnableFOC = PRO_LICENSED`, and `TunerConstants` picks `FusedCANcoder` or `RemoteCANcoder` the same way. CTRE's odometry thread decides time-synced sampling on its own; with `PRO_LICENSED = false`, check on the robot that no Pro fault appears on the drive bus.
@@ -23,16 +23,16 @@ Rule: when a value is confirmed, change it and delete its `PLACEHOLDER` comment 
 - **Odometry drift in simulation.** Straight driving and turning on the spot track the true pose to a few millimetres. Driving while turning drifts about 0.07 m over 1.5 s, from module steer lag and scrub that maple-sim models; the reef position fix corrects it.
 - **Wrist angle.** The wrist motor closes its loop on its own rotor, seeded from the Through Bore encoder on DIO 1 at start-up, after a motor-controller reboot, and when a still wrist has drifted more than 0.5 degrees. More than 5 degrees apart for 0.1 s, or more than 5 degrees of corrections in one direction since start-up, is a fault: the wrist stops and the carriage holds. After a reboot there is about one loop in which the controller is wrong about where it is; it is in neutral until the next request, which is not sent until it has been seeded.
 - **Unstow band.** `KeepOut` allows any wrist angle from 0.75 to 2.0 in; the planner aims for 1.25, and the rest is room for an axis that settles off its target. Measured on the rev3 assembly with surface samples every 0.1 in or closer: every angle from -90 to +75 clears the fixed parts by a third of an inch or more from 0.75 to 2.0 in. At 0.5 in the claw is 0.1 in from the lift gearbox at -65 degrees; a stowed wrist at -90 meets the climber fork from about 2.6 in, and one resting on its -93 stop from about 1.7 in. The same measurement agrees with drawing R-001 at every band edge; the tightest are 0.25 in at -40 degrees from 17.5 to 22 in and 0.26 in at -75 degrees at 7 in.
-- **Climber.** Nothing measures the fork, the pawls or the tray. The fork angle is the rope the motor has wound, from stowed at power-up; the pawls and the tray are given a fixed time. In simulation a pawl that carries load does not lift and the ratchet holds to one tooth (3.6 degrees). Before the pawls lift, the rope has to hold still for 0.3 s with a mean motor current under 20 A; a hanging robot takes about 45 A. Check both currents on the robot. The cage is a constant worst-case torque, so nothing about capturing a real cage is tested.
+- **Climber.** Nothing measures the fork, the pawls or the tray. The fork angle is the rope the motor has wound, from stowed at power-up; the pawls and the tray are given a fixed time. In simulation a pawl that carries load does not lift and the ratchet holds to one tooth (3.2 degrees). Before the pawls lift, the rope has to hold still for 0.3 s with a mean motor current under 20 A; a hanging robot takes about 45 A. Check both currents on the robot. The cage is a constant worst-case torque, so nothing about capturing a real cage is tested.
 - **Robot-level tests share one robot.** Phoenix's simulator slows as devices are created and closed, so `TeleopCycleTest` (and the autos test) build one `RobotContainer` per class through `testutil/RobotFixture` and reset it between tests, instead of building one per test.
 - **Lost sensors and lost positions.** A CANrange that stops answering reports "no piece" (so no auto leg waits on it), but the superstructure keeps the last known piece for its interlocks (algae carry, hold voltage) until a push out of `EJECT_CLEARS_S` clears it. A score with the coral sensor offline pushes for the full `RELEASE_TIMEOUT_S`. The elevator keeps a zero it finds at start-up above 1 in (a robot-code restart; an unpowered carriage falls to the bottom); if its motor controller reboots while running it stops, raises "Elevator lost its position", and waits for the carriage to be lowered by hand and the code restarted. Check on the robot that the Talon really keeps its position across a code restart.
 - **Drive acceleration limit.** The drive holds every change of field velocity to `TIP_SAFETY` (80 %) of the tipping acceleration on drawing R-001 at the present carriage height: about 8.4 m/s^2 stowed, 4.0 m/s^2 at full height.
 
 ## Every placeholder in the code
 
-Generated from the source on 2026-11-23. Re-check the count with `grep -rn "PLACEHOLDER(" src/main/java | wc -l`; a line with two reasons is one line.
+Generated from the source on 2026-11-24. Re-check the count with `grep -rn "PLACEHOLDER(" src/main/java | wc -l`; a line with two reasons is one line.
 
-90 lines in `src/main/java` carry a placeholder.
+93 lines in `src/main/java` carry a placeholder.
 
 | Reason | Where | Value |
 | --- | --- | --- |
@@ -71,8 +71,9 @@ Generated from the source on 2026-11-23. Re-check the count with `grep -rn "PLAC
 | `tuning` | [AutoFactory.java:38](../src/main/java/frc/robot/autos/AutoFactory.java#L38) | `ALGAE_LEG_TIMEOUT_S = 4.0` |
 | `tuning` | [AutoFactory.java:39](../src/main/java/frc/robot/autos/AutoFactory.java#L39) | `NET_LEG_TIMEOUT_S = 4.0` |
 | `tuning` | [ClimbCommands.java:14](../src/main/java/frc/robot/commands/ClimbCommands.java#L14) | `ENDGAME_S = 30` |
-| `tuning` | [ScoreCommands.java:33](../src/main/java/frc/robot/commands/ScoreCommands.java#L33) | `MIN_RELEASE_S = 0.25` |
-| `tuning` | [ScoreCommands.java:55](../src/main/java/frc/robot/commands/ScoreCommands.java#L55) | `ALGAE_SPEED_MPS = 2.0` |
+| `tuning` | [ScoreCommands.java:34](../src/main/java/frc/robot/commands/ScoreCommands.java#L34) | `MIN_RELEASE_S = 0.25` |
+| `tuning` | [ScoreCommands.java:53](../src/main/java/frc/robot/commands/ScoreCommands.java#L53) | `DOUBT_LIMIT_S = 0.6` |
+| `tuning` | [ScoreCommands.java:62](../src/main/java/frc/robot/commands/ScoreCommands.java#L62) | `ALGAE_SPEED_MPS = 2.0` |
 | `tuning` | [RobotConstants.java:77](../src/main/java/frc/robot/config/RobotConstants.java#L77) | `CRUISE_IN_PER_S = 110` |
 | `tuning` | [RobotConstants.java:105](../src/main/java/frc/robot/config/RobotConstants.java#L105) | `CRUISE_DEG_PER_S = 400` |
 | `tuning` | [RobotConstants.java:106](../src/main/java/frc/robot/config/RobotConstants.java#L106) | `ACCEL_DEG_PER_S2 = 1600` |
@@ -117,6 +118,8 @@ Generated from the source on 2026-11-23. Re-check the count with `grep -rn "PLAC
 | `tuning` | [ElevatorIOTalonFX.java:36](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L36) | `KA = 0.0014` |
 | `tuning` | [ElevatorIOTalonFX.java:37](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L37) | `KP = 0.7` |
 | `tuning` | [ElevatorIOTalonFX.java:38](../src/main/java/frc/robot/subsystems/elevator/ElevatorIOTalonFX.java#L38) | `KD = 0.014` |
+| `tuning` | [Vision.java:26](../src/main/java/frc/robot/subsystems/vision/Vision.java#L26) | `FAR_AGREE_S = 0.3` |
+| `tuning` | [Vision.java:28](../src/main/java/frc/robot/subsystems/vision/Vision.java#L28) | `FAR_AGREE_M = 0.25` |
 | `tuning` | [Wrist.java:40](../src/main/java/frc/robot/subsystems/wrist/Wrist.java#L40) | `RESEED_DEG = 0.5` |
 | `tuning` | [WristIOTalonFX.java:31](../src/main/java/frc/robot/subsystems/wrist/WristIOTalonFX.java#L31) | `KG = 0.30` |
 | `tuning` | [WristIOTalonFX.java:32](../src/main/java/frc/robot/subsystems/wrist/WristIOTalonFX.java#L32) | `KS = 0.0` |

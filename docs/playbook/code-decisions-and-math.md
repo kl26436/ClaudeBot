@@ -39,6 +39,12 @@ Motor data in the code and simulator: Kraken X60 with FOC, 5,800 rpm free, 9.37 
 - **Why:** once the heading is known, the angle to one tag and its height in pixels are enough. Team 2910 does it this way.
 - **Cost:** no fix at the station, because the camera looks forward.
 
+### Nov 24: A far-off fix has to prove itself (Code, found by the playbook's own replay)
+- **Problem:** a fix more than 1 m from the estimate was always refused, so a robot that had been knocked 1.26 m out drove the right route in the wrong place and let its coral go onto the floor. Recording it for the playbook is how it was seen.
+- **Decided:** a bad sighting jumps about; a wrong estimate stays wrong by the same amount. So a far fix that says the same thing, within 0.25 m, for 0.3 s without a break is believed. The route is planned again from there, and the release waits (at most 0.6 s) while the camera disputes the position.
+- **Still true:** with no tag in view there is nothing to correct it, and the robot goes by its wheels.
+- **Tests:** sightings that jump about are never believed, nor bursts shorter than 0.3 s; the 1.26 m start now scores.
+
 ### Nov 21: Simulate the camera from geometry (Code)
 - **Decided:** a simulated camera works out what the Limelight would report from the robot's true pose, with noise, and the real position code runs on that. No extra vision library.
 
@@ -59,7 +65,7 @@ Motor data in the code and simulator: Kraken X60 with FOC, 5,800 rpm free, 9.37 
 - **Problem:** the drawing's table has no height where the wrist may leave stow. The clash grid showed every angle clear at exactly 1.25 in, and no mechanism holds exactly anything.
 - **Measured:** 550,000 points on the wrist and 2.2 million on everything else, nearest distance at 12 heights and 19 angles. From 0.75 to 2.0 in, every angle from −90° to +75° clears by about a third of an inch or more.
 - **Decided:** the wrist may be anywhere in that band; the carriage aims for 1.25 in, and the rest is room to miss. See 2.4.
-- **Rechecked on the final package, 3.2:** the same.
+- **Rechecked on packages 3.2 and 3.3** (with both mast braces): the same.
 - **Check by hand on the robot first.**
 
 ### Nov 23: Phoenix counts rotor turns, the code converts to inches (Code)
@@ -108,12 +114,12 @@ Motor data in the code and simulator: Kraken X60 with FOC, 5,800 rpm free, 9.37 
 - **Rule:** wherever one thing waits for another, the window has to be wider than both tolerances added up. The test lets each axis settle anywhere inside its own tolerance (0.45 in, 1.4°) and requires every move to finish.
 
 ### 2.5 Drive acceleration cap
-- Cap = 0.8 × tipping acceleration × 9.81 m/s². Stowed: 0.8 × 1.07 × 9.81 = **8.4 m/s²**. At the top: 0.8 × 0.50 × 9.81 = **3.9 m/s²**. Between the drawing's heights it is interpolated.
+- Cap = 0.8 × tipping acceleration × 9.81 m/s². Stowed: 0.8 × 1.06 × 9.81 = **8.3 m/s²**. At the top: 0.8 × 0.50 × 9.81 = **3.9 m/s²**. Between the drawing's heights it is interpolated.
 - The code uses 0.50 g at the top, the lowest of the drawing's two full-height poses (wrist at +60°); the design log's table shows 0.52 g for the wrist level.
 - **Simulated:** driving off from a score at full stick with the carriage high, the robot's true acceleration peaked at 1.09 times the cap.
 
 ### 2.6 Can 60 A motors reach that?
-- 60 A × 0.0194 = 1.16 N·m, × 6.75 gearing / 0.0501 m wheel radius = 157 N a wheel, 627 N in all. On 142.8 lb (64.8 kg) that is **9.7 m/s²**, a little over the stowed cap (calculated, no losses).
+- 60 A × 0.0194 = 1.16 N·m, × 6.75 gearing / 0.0501 m wheel radius = 157 N a wheel, 627 N in all. On 143.8 lb (65.2 kg) that is **9.6 m/s²**, a little over the stowed cap (calculated, no losses).
 
 ### 2.7 Drive to a point
 - Speed = kP × distance + a little for friction, no more than the cap. With kP = 3.0 and a 3 m/s cap the robot starts slowing 1.0 m out.
@@ -129,13 +135,13 @@ Motor data in the code and simulator: Kraken X60 with FOC, 5,800 rpm free, 9.37 
 A station cycle takes about 5.6 s, of which 0.7 s is the simulated human player (assumed). Times vary by about 0.2 s from run to run. That leaves about 1.4 s of the 15.
 
 ### 2.9 Climb: how far is half a tooth
-- A tooth is 3.6° of fork (design log 2.6). A pawl resting on a tooth has to be unloaded before a servo can lift it, so the winch winds in first. Wind in a whole tooth and the pawl drops over the next one. **Half a tooth, 1.8°, is as far as it gets from both.**
+- A tooth is 3.2° of fork (design log 2.6; 3.6° with the cut wheel before package 3.3). A pawl resting on a tooth has to be unloaded before a servo can lift it, so the winch winds in first. Wind in a whole tooth and the pawl drops over the next one. **Half a tooth, 1.6°, is as far as it gets from both.**
 
 ---
 
 ## 3. Misses and what they taught (chapter 10 material)
 
-- **Elevator speed: fixed Nov 23.** At 110 in/s the simulated profile stopped slowing down and the carriage hit the top, so it ran at 65. Gains, limits and step rates made no difference. The cause was doing the unit conversion inside the motor controller with a ratio below 1; counting rotor turns and converting in our own code gave a normal profile at once. *Lesson: when nothing you tune changes a fault, stop tuning and change the structure.*
+- **Elevator speed: fixed Nov 23.** At 110 in/s the simulated profile stopped slowing down and the carriage hit the top, so it ran at 65. Gains, limits and step rates made no difference. The cause was doing the unit conversion inside the motor controller with a ratio below 1; counting rotor turns and converting in our own code gave a normal profile at once. It holds on the team PC, idle or with every core busy (simulated, Nov 24), but not in a cloud sandbox, where the simulated profile still stops dead at the target; why is not known. A real motor controller is neither, so raise the speed on the robot in steps. *Lesson: when nothing you tune changes a fault, stop tuning and change the structure.*
 - **Hanging or stowed: found in review Nov 23.** A hanging fork reads 88° and a stowed one 90°, and nothing measures the fork. If robot code had restarted while hanging, it would have come back thinking "stowed", and the next press of the climb button would have lowered the robot. It now writes down that a climb has begun. *Lesson: ask of every state, "what if the code starts here?"*
 - **The planner that forgot about momentum: found in review Nov 22.** See 2.3. *Lesson: "where is it" is the wrong question for anything that takes time to stop.*
 - **A dead sensor scored nothing: found in review Nov 22.** The three-coral auto skipped every score, because an offline sensor reads the same as an empty one.
